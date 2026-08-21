@@ -1,3 +1,4 @@
+pub mod background;
 pub mod hud;
 pub mod level_select;
 pub mod menu;
@@ -113,6 +114,10 @@ impl TextureStore {
         }
 
         // Environment textures
+        load_tex!(
+            "park_background",
+            "../../assets/environment/park_background.png"
+        );
         load_tex!("asphalt", "../../assets/environment/asphalt.png");
         load_tex!("stall_marker", "../../assets/environment/stall_marker.png");
         load_tex!("exit_gate", "../../assets/environment/exit_gate.png");
@@ -300,6 +305,8 @@ pub struct BoardLayout {
     pub total_width: f32,
     pub total_height: f32,
     pub hud_height: f32,
+    pub screen_width: f32,
+    pub screen_height: f32,
 }
 
 impl BoardLayout {
@@ -331,6 +338,8 @@ impl BoardLayout {
             total_width,
             total_height,
             hud_height: metrics.hud_height,
+            screen_width: screen_w,
+            screen_height: screen_h,
         }
     }
 }
