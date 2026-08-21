@@ -130,9 +130,19 @@ async fn main() {
                             layout.cell_size,
                         );
                     } else if is_mouse_button_down(MouseButton::Left) {
-                        current_board.handle_touch_move(mouse_pos.0, mouse_pos.1, layout.cell_size);
+                        if let Some(trigger) = current_board.handle_touch_move(
+                            mouse_pos.0,
+                            mouse_pos.1,
+                            layout.cell_size,
+                        ) {
+                            sound.play(SoundTrigger::Bump);
+                            sound.play(trigger);
+                        }
                     } else if is_mouse_button_released(MouseButton::Left) {
                         if let Some(trigger) = current_board.handle_touch_up() {
+                            if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
+                                sound.play(SoundTrigger::Bump);
+                            }
                             sound.play(trigger);
                             if trigger == SoundTrigger::Win {
                                 sound.play(SoundTrigger::ExitDrive);
@@ -140,21 +150,21 @@ async fn main() {
                         }
                     }
 
-                    // Update win animation & transition to victory modal
-                    if current_board.is_won {
-                        current_board.update_exit_animation(dt);
-                        if current_board.exit_animation_progress >= 0.85 {
-                            // Record completion stats
-                            records
-                                .entry((current_pack, current_level_idx))
-                                .or_default()
-                                .record_win(
-                                    current_board.move_count,
-                                    current_level.calculate_stars(current_board.move_count),
-                                );
+                    // Update board physics, vehicle bump timers, and animations
+                    current_board.update(dt);
 
-                            scene = AppScene::LevelComplete;
-                        }
+                    // Check win transition to victory modal
+                    if current_board.is_won && current_board.exit_animation_progress >= 0.85 {
+                        // Record completion stats
+                        records
+                            .entry((current_pack, current_level_idx))
+                            .or_default()
+                            .record_win(
+                                current_board.move_count,
+                                current_level.calculate_stars(current_board.move_count),
+                            );
+
+                        scene = AppScene::LevelComplete;
                     }
                 }
 

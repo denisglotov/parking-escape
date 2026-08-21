@@ -57,7 +57,15 @@
       const audioBuffers = {};
 
       (function preloadBytes() {
-        const files = ["slide", "bump", "win", "click", "exit_drive"];
+        const files = [
+          "slide",
+          "bump",
+          "alarm",
+          "siren",
+          "win",
+          "click",
+          "exit_drive",
+        ];
         for (const file of files) {
           fetch(`assets/audio/${file}.wav`)
             .then((r) => r.arrayBuffer())
@@ -168,6 +176,12 @@
             };
             env_obj.env.play_sound_bump = function () {
               if (window.parkingPlaySound) window.parkingPlaySound("bump");
+            };
+            env_obj.env.play_sound_alarm = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound("alarm");
+            };
+            env_obj.env.play_sound_siren = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound("siren");
             };
             env_obj.env.play_sound_win = function () {
               if (window.parkingPlaySound) window.parkingPlaySound("win");

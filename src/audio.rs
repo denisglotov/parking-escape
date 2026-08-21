@@ -2,6 +2,8 @@
 pub enum SoundTrigger {
     Slide,
     Bump,
+    Alarm,
+    Siren,
     Win,
     ButtonClick,
     ExitDrive,
@@ -15,6 +17,8 @@ mod wasm_backend {
     extern "C" {
         fn play_sound_slide();
         fn play_sound_bump();
+        fn play_sound_alarm();
+        fn play_sound_siren();
         fn play_sound_win();
         fn play_sound_click();
         fn play_sound_exit();
@@ -32,6 +36,8 @@ mod wasm_backend {
                 match trigger {
                     SoundTrigger::Slide => play_sound_slide(),
                     SoundTrigger::Bump => play_sound_bump(),
+                    SoundTrigger::Alarm => play_sound_alarm(),
+                    SoundTrigger::Siren => play_sound_siren(),
                     SoundTrigger::Win => play_sound_win(),
                     SoundTrigger::ButtonClick => play_sound_click(),
                     SoundTrigger::ExitDrive => play_sound_exit(),
@@ -49,6 +55,8 @@ mod native_backend {
     pub struct SoundBackend {
         snd_slide: Option<Sound>,
         snd_bump: Option<Sound>,
+        snd_alarm: Option<Sound>,
+        snd_siren: Option<Sound>,
         snd_win: Option<Sound>,
         snd_click: Option<Sound>,
         snd_exit: Option<Sound>,
@@ -61,6 +69,12 @@ mod native_backend {
                     .await
                     .ok(),
                 snd_bump: load_sound_from_bytes(include_bytes!("../assets/audio/bump.wav"))
+                    .await
+                    .ok(),
+                snd_alarm: load_sound_from_bytes(include_bytes!("../assets/audio/alarm.wav"))
+                    .await
+                    .ok(),
+                snd_siren: load_sound_from_bytes(include_bytes!("../assets/audio/siren.wav"))
                     .await
                     .ok(),
                 snd_win: load_sound_from_bytes(include_bytes!("../assets/audio/win.wav"))
@@ -79,6 +93,8 @@ mod native_backend {
             let sound = match trigger {
                 SoundTrigger::Slide => &self.snd_slide,
                 SoundTrigger::Bump => &self.snd_bump,
+                SoundTrigger::Alarm => &self.snd_alarm,
+                SoundTrigger::Siren => &self.snd_siren,
                 SoundTrigger::Win => &self.snd_win,
                 SoundTrigger::ButtonClick => &self.snd_click,
                 SoundTrigger::ExitDrive => &self.snd_exit,
