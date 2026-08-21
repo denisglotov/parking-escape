@@ -38,7 +38,7 @@ pub fn render_hud(
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
 
-    let btn_size = metrics.s(48.0);
+    let btn_size = metrics.s(52.0);
     let btn_pad_x = metrics.s(14.0);
     let btn_y = (hud_h - btn_size) / 2.0;
 
@@ -53,36 +53,36 @@ pub fn render_hud(
         action = HudAction::BackToMenu;
     }
 
-    // Level Title in center
+    // Level Title in center (Prominent & Clear)
     let title_text = format!("Level {}", level.id);
-    let title_font_size = metrics.s(24.0);
-    let title_dim = measure_text(&title_text, None, title_font_size as u16, 1.0);
-    draw_text(
+    let title_font_size = metrics.s(30.0);
+    let title_y = btn_y + metrics.s(20.0);
+    textures.draw_text_centered(
         &title_text,
-        screen_w / 2.0 - title_dim.width / 2.0,
-        btn_y + metrics.s(18.0),
+        screen_w / 2.0,
+        title_y,
         title_font_size,
         THEME.text_primary,
     );
 
     // Moves vs Par moves & Star rating
     let stars = level.calculate_stars(moves);
-    let stats_str = format!("Moves: {} / Par: {}", moves, level.par_moves);
-    let stats_font_size = metrics.s(15.0);
-    let stats_dim = measure_text(&stats_str, None, stats_font_size as u16, 1.0);
+    let stats_str = format!("Moves: {}  /  Par: {}", moves, level.par_moves);
+    let stats_font_size = metrics.s(19.0);
+    let stats_dim = textures.measure_text(&stats_str, stats_font_size);
 
-    let star_size = metrics.s(16.0);
-    let star_spacing = metrics.s(3.5);
+    let star_size = metrics.s(20.0);
+    let star_spacing = metrics.s(4.0);
     let star_group_w = 3.0 * star_size + 2.0 * star_spacing;
-    let gap = metrics.s(10.0);
+    let gap = metrics.s(12.0);
     let total_stat_w = stats_dim.width + gap + star_group_w;
     let stat_start_x = screen_w / 2.0 - total_stat_w / 2.0;
 
-    let center_y = btn_y + metrics.s(38.0);
-    draw_text(
+    let stats_y = btn_y + metrics.s(44.0);
+    textures.draw_text(
         &stats_str,
         stat_start_x,
-        center_y,
+        stats_y - stats_dim.height / 2.0 + stats_dim.offset_y,
         stats_font_size,
         THEME.text_secondary,
     );
@@ -90,7 +90,7 @@ pub fn render_hud(
     // Draw glossy star row grouped with stats text
     textures.draw_star_row(
         stat_start_x + stats_dim.width + gap + star_group_w / 2.0,
-        center_y - metrics.s(5.0),
+        stats_y,
         stars,
         3,
         star_size,

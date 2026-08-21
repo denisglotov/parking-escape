@@ -1,4 +1,4 @@
-use super::{draw_ui_button, ButtonStyle, TextureStore, UiMetrics, THEME};
+use super::{draw_ui_button, ButtonStyle, ShadowTextStyle, TextureStore, UiMetrics, THEME};
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,38 +38,41 @@ pub fn render_main_menu(
         );
     }
 
-    // 2. Title Typography
+    // 2. Title Typography (Large, Punchy with Shadow)
     let title = "PARKING ESCAPE";
-    let title_font_size = metrics.s(38.0);
-    let title_dim = measure_text(title, None, title_font_size as u16, 1.0);
+    let title_font_size = metrics.s(48.0);
     let title_y = badge_y + badge_sz + metrics.s(44.0);
-    draw_text(
+    textures.draw_text_with_shadow(
         title,
-        screen_w / 2.0 - title_dim.width / 2.0,
+        screen_w / 2.0,
         title_y,
-        title_font_size,
-        THEME.text_primary,
+        ShadowTextStyle::new(
+            title_font_size,
+            THEME.text_primary,
+            Color::new(0.0, 0.0, 0.0, 0.6),
+            metrics.s(3.0),
+        ),
     );
 
     let subtitle = "Dynamic Sliding Logic Puzzle";
-    let sub_font_size = metrics.s(18.0);
-    let sub_dim = measure_text(subtitle, None, sub_font_size as u16, 1.0);
-    draw_text(
+    let sub_font_size = metrics.s(22.0);
+    let sub_y = title_y + metrics.s(34.0);
+    textures.draw_text_centered(
         subtitle,
-        screen_w / 2.0 - sub_dim.width / 2.0,
-        title_y + metrics.s(28.0),
+        screen_w / 2.0,
+        sub_y,
         sub_font_size,
         THEME.accent_blue,
     );
 
-    // 3. Menu Buttons
-    let btn_w = (screen_w * 0.78).min(metrics.s(360.0));
-    let btn_h = metrics.s(56.0);
+    // 3. Menu Buttons (Bigger, Generous Touch Targets)
+    let btn_w = (screen_w * 0.82).min(metrics.s(380.0));
+    let btn_h = metrics.s(64.0);
     let btn_x = (screen_w - btn_w) / 2.0;
-    let mut btn_y = (title_y + metrics.s(68.0)).max(screen_h * 0.46);
-    let btn_font_size = metrics.s(20.0);
+    let mut btn_y = (sub_y + metrics.s(64.0)).max(screen_h * 0.48);
+    let btn_font_size = metrics.s(24.0);
     let btn_border = metrics.s(2.0).max(1.5);
-    let spacing = metrics.s(16.0);
+    let spacing = metrics.s(18.0);
 
     let btn_style = |bg_color| ButtonStyle {
         bg_color,
@@ -79,6 +82,7 @@ pub fn render_main_menu(
     };
 
     if draw_ui_button(
+        textures,
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         "PLAY GAME",
         btn_style(THEME.accent_green),
@@ -90,6 +94,7 @@ pub fn render_main_menu(
     btn_y += btn_h + spacing;
 
     if draw_ui_button(
+        textures,
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         "LEVEL SELECT",
         btn_style(THEME.card_bg),
@@ -106,6 +111,7 @@ pub fn render_main_menu(
         "SOUND: OFF"
     };
     if draw_ui_button(
+        textures,
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         sound_label,
         btn_style(THEME.surface),
@@ -122,7 +128,7 @@ pub fn render_main_menu(
         "icon_sound_off"
     };
     if let Some(snd_tex) = textures.get(sound_tex_key) {
-        let icon_sz = metrics.s(28.0);
+        let icon_sz = metrics.s(32.0);
         draw_texture_ex(
             snd_tex,
             btn_x + metrics.s(20.0),

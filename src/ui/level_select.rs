@@ -36,8 +36,8 @@ pub fn render_level_select(
         Color::new(0.2, 0.24, 0.32, 0.6),
     );
 
-    let btn_h = metrics.s(44.0);
-    let btn_w = metrics.s(96.0);
+    let btn_h = metrics.s(48.0);
+    let btn_w = metrics.s(104.0);
     let btn_pad_x = metrics.s(16.0);
     let btn_y = (header_h - btn_h) / 2.0;
 
@@ -64,11 +64,11 @@ pub fn render_level_select(
         Color::new(0.3, 0.35, 0.45, 0.6),
     );
 
-    let icon_sz = metrics.s(22.0);
+    let icon_sz = metrics.s(24.0);
     if let Some(back_tex) = textures.get("icon_back") {
         draw_texture_ex(
             back_tex,
-            btn_pad_x + metrics.s(8.0),
+            btn_pad_x + metrics.s(10.0),
             btn_y + (btn_h - icon_sz) / 2.0,
             if back_hovered {
                 THEME.accent_gold
@@ -81,18 +81,18 @@ pub fn render_level_select(
             },
         );
     }
-    let back_text_size = metrics.s(18.0);
-    let back_dim = measure_text("Back", None, back_text_size as u16, 1.0);
-    draw_text(
+    let back_text_size = metrics.s(20.0);
+    let back_color = if back_hovered {
+        THEME.accent_gold
+    } else {
+        THEME.text_primary
+    };
+    textures.draw_text(
         "Back",
         btn_pad_x + icon_sz + metrics.s(14.0),
-        btn_y + (btn_h + back_dim.height) / 2.0 - metrics.s(2.0),
+        btn_y + btn_h / 2.0 + metrics.s(6.0),
         back_text_size,
-        if back_hovered {
-            THEME.accent_gold
-        } else {
-            THEME.text_primary
-        },
+        back_color,
     );
 
     if back_hovered && is_mouse_down {
@@ -100,12 +100,11 @@ pub fn render_level_select(
     }
 
     let header_title = "SELECT LEVEL";
-    let title_font_size = metrics.s(24.0);
-    let title_dim = measure_text(header_title, None, title_font_size as u16, 1.0);
-    draw_text(
+    let title_font_size = metrics.s(28.0);
+    textures.draw_text_centered(
         header_title,
-        screen_w / 2.0 - title_dim.width / 2.0,
-        header_h / 2.0 + title_dim.height / 2.0 - metrics.s(2.0),
+        screen_w / 2.0,
+        header_h / 2.0,
         title_font_size,
         THEME.text_primary,
     );
@@ -120,7 +119,7 @@ pub fn render_level_select(
     let tab_gap = metrics.s(8.0);
     let tab_padding = metrics.s(16.0);
     let tab_w = ((screen_w - tab_padding * 2.0 - tab_gap * 2.0) / 3.0).min(metrics.s(220.0));
-    let tab_h = metrics.s(44.0);
+    let tab_h = metrics.s(48.0);
     let tab_y = header_h + metrics.s(16.0);
     let total_tabs_w = tab_w * 3.0 + tab_gap * 2.0;
     let tab_start_x = (screen_w - total_tabs_w) / 2.0;
@@ -136,11 +135,12 @@ pub fn render_level_select(
         };
 
         if draw_ui_button(
+            textures,
             Rect::new(tx, tab_y, tab_w, tab_h),
             label,
             ButtonStyle {
                 bg_color: bg_col,
-                font_size: metrics.s(15.0),
+                font_size: metrics.s(18.0),
                 border_width: (1.5 * metrics.scale).max(1.0),
                 ..Default::default()
             },
@@ -164,8 +164,8 @@ pub fn render_level_select(
     let actual_grid_w = cols as f32 * card_w + total_spacing;
     let grid_start_x = (screen_w - actual_grid_w) / 2.0;
 
-    let card_num_font = metrics.s(28.0);
-    let star_size = (card_w * 0.18).clamp(metrics.s(16.0), metrics.s(28.0));
+    let card_num_font = metrics.s(34.0);
+    let star_size = (card_w * 0.20).clamp(metrics.s(18.0), metrics.s(30.0));
     let star_spacing = metrics.s(4.0);
 
     for (idx, lvl) in levels.iter().enumerate() {
@@ -203,13 +203,12 @@ pub fn render_level_select(
         let card_border = (2.0 * metrics.scale).max(1.5);
         draw_rectangle_lines(cx, cy, card_w, card_h, card_border, border_col);
 
-        // Level Number
+        // Level Number (Prominent & Clear)
         let num_str = format!("{}", lvl.id);
-        let num_dim = measure_text(&num_str, None, card_num_font as u16, 1.0);
-        draw_text(
+        textures.draw_text_centered(
             &num_str,
-            cx + (card_w - num_dim.width) / 2.0,
-            cy + card_h * 0.44,
+            cx + card_w / 2.0,
+            cy + card_h * 0.42,
             card_num_font,
             THEME.text_primary,
         );

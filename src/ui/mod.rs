@@ -45,13 +45,14 @@ impl Default for ButtonStyle {
         Self {
             bg_color: THEME.card_bg,
             text_color: THEME.text_primary,
-            font_size: 18.0,
+            font_size: 22.0,
             border_width: 1.5,
         }
     }
 }
 
 pub fn draw_ui_button(
+    textures: &TextureStore,
     bounds: Rect,
     label: &str,
     style: ButtonStyle,
@@ -80,29 +81,53 @@ pub fn draw_ui_button(
         Color::new(1.0, 1.0, 1.0, if hovered { 0.5 } else { 0.2 }),
     );
 
-    let dim = measure_text(label, None, style.font_size as u16, 1.0);
-    draw_text(
+    let text_col = if hovered {
+        THEME.accent_gold
+    } else {
+        style.text_color
+    };
+
+    textures.draw_text_centered(
         label,
-        bounds.x + (bounds.w - dim.width) / 2.0,
-        bounds.y + (bounds.h + dim.height) / 2.0 - 2.0,
+        bounds.x + bounds.w / 2.0,
+        bounds.y + bounds.h / 2.0,
         style.font_size,
-        if hovered {
-            THEME.accent_gold
-        } else {
-            style.text_color
-        },
+        text_col,
     );
 
     hovered && is_clicked
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ShadowTextStyle {
+    pub font_size: f32,
+    pub color: Color,
+    pub shadow_color: Color,
+    pub offset: f32,
+}
+
+impl ShadowTextStyle {
+    pub fn new(font_size: f32, color: Color, shadow_color: Color, offset: f32) -> Self {
+        Self {
+            font_size,
+            color,
+            shadow_color,
+            offset,
+        }
+    }
+}
+
 pub struct TextureStore {
     pub textures: HashMap<String, Texture2D>,
+    pub font: Font,
 }
 
 impl TextureStore {
     pub async fn load_all() -> Self {
         let mut textures = HashMap::new();
+
+        let font = load_ttf_font_from_bytes(include_bytes!("../../assets/fonts/game_font.ttf"))
+            .expect("Failed to load TTF game font");
 
         macro_rules! load_tex {
             ($key:expr, $path:expr) => {
@@ -175,7 +200,51 @@ impl TextureStore {
         load_veh!("bus_transit_h", "bus_transit_h.png");
         load_veh!("bus_transit_v", "bus_transit_v.png");
 
-        Self { textures }
+        Self { textures, font }
+    }
+
+    pub fn draw_text(&self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+        draw_text_ex(
+            text,
+            x,
+            y,
+            TextParams {
+                font: Some(&self.font),
+                font_size: font_size.round() as u16,
+                font_scale: 1.0,
+                color,
+                ..Default::default()
+            },
+        );
+    }
+
+    pub fn measure_text(&self, text: &str, font_size: f32) -> TextDimensions {
+        measure_text(text, Some(&self.font), font_size.round() as u16, 1.0)
+    }
+
+    pub fn draw_text_centered(&self, text: &str, cx: f32, cy: f32, font_size: f32, color: Color) {
+        let dim = self.measure_text(text, font_size);
+        self.draw_text(
+            text,
+            cx - dim.width / 2.0,
+            cy - dim.height / 2.0 + dim.offset_y,
+            font_size,
+            color,
+        );
+    }
+
+    pub fn draw_text_with_shadow(&self, text: &str, cx: f32, cy: f32, style: ShadowTextStyle) {
+        let dim = self.measure_text(text, style.font_size);
+        let x = cx - dim.width / 2.0;
+        let y = cy - dim.height / 2.0 + dim.offset_y;
+        self.draw_text(
+            text,
+            x + style.offset,
+            y + style.offset,
+            style.font_size,
+            style.shadow_color,
+        );
+        self.draw_text(text, x, y, style.font_size, style.color);
     }
 
     pub fn get(&self, name: &str) -> Option<&Texture2D> {
@@ -281,7 +350,7 @@ impl UiMetrics {
         let scale_h = screen_h / Self::BASE_HEIGHT;
         // In portrait mode, scale based on width, but guard against extreme landscape/stretched aspect ratios
         let scale = scale_w.min(scale_h * 1.25).clamp(0.75, 4.0);
-        let hud_height = (76.0 * scale).round();
+        let hud_height = (84.0 * scale).round();
 
         Self { scale, hud_height }
     }

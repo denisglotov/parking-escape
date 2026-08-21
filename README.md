@@ -28,3 +28,10 @@ Obstacles in the parking lot come in different sizes, adding layers of complexit
 *   **Dynamic Board Sizes:** The grid expands as you progress, offering more complex traffic jams.
 *   **Diverse Obstacles:** Maneuver around standard cars and massive 4-tile semi-trucks.
 *   **Data-Driven Level Design:** Puzzles are loaded dynamically via JSON, containing both board dimensions and vehicle coordinates.
+
+## 🔤 Typography & Assets
+
+*   **Font:** [Fredoka](https://fonts.google.com/specimen/Fredoka) (Bold) by The Fredoka Project Authors (Milena Brandao, Hafontia).
+*   **License:** Licensed under the [SIL Open Font License, Version 1.1](licenses/OFL-Fredoka.txt) (100% free and open-source for personal, commercial, and embedded game use).
+
+
