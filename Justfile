@@ -16,7 +16,7 @@ build-wasm:
     cargo build --target wasm32-unknown-unknown --release
 
 install-wasm: build-wasm
-    cp target/wasm32-unknown-unknown/release/parking-escape.wasm web/parking-escape.wasm
+    cp target/wasm32-unknown-unknown/release/parkingescape.wasm web/parking-escape.wasm
     @test -L web/assets || ln -s ../assets web/assets
 
 # Build android image

@@ -5,7 +5,7 @@ set -euo pipefail
 # can coexist with the Google Play release version on the same device.
 # Note: cargo-quad-apk uses the last segment of package_name ("parkingescape") as the native
 # library name to load in MainActivity.java (System.loadLibrary("parkingescape")), which must match
-# the crate name libparking_escape.so.
+# the crate name libparkingescape.so.
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CARGO_TOML="${PROJECT_ROOT}/Cargo.toml"
