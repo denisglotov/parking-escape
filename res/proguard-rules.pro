@@ -3,7 +3,13 @@
 -allowaccessmodification
 
 # Keep Android Activity and entry point
--keep public class org.dymka.biomass.MainActivity {
+-keep public class org.dymka.parkingescape.MainActivity {
+    public *;
+}
+-keep public class org.dymka.debug.parkingescape.MainActivity {
+    public *;
+}
+-keep public class * extends android.app.NativeActivity {
     public *;
 }
 
