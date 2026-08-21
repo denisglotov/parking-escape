@@ -28,11 +28,6 @@ const LILY_CENTER: Color = Color::new(0.98, 0.82, 0.15, 1.0);
 const REED_STALK: Color = Color::new(0.25, 0.45, 0.22, 1.0);
 const REED_HEAD: Color = Color::new(0.38, 0.24, 0.14, 1.0);
 
-const LAMP_POST_DARK: Color = Color::new(0.12, 0.14, 0.16, 1.0);
-const LAMP_BRACKET: Color = Color::new(0.22, 0.25, 0.28, 1.0);
-const LAMP_BULB: Color = Color::new(1.0, 0.96, 0.75, 1.0);
-const LAMP_GLOW_AMBER: Color = Color::new(1.0, 0.82, 0.35, 1.0);
-
 const TREE_SHADOW: Color = Color::new(0.04, 0.08, 0.05, 0.45);
 const TREE_DARK: Color = Color::new(0.11, 0.28, 0.14, 1.0);
 const TREE_MID: Color = Color::new(0.17, 0.44, 0.20, 1.0);
@@ -44,13 +39,8 @@ const BUSH_SHADOW: Color = Color::new(0.05, 0.09, 0.06, 0.35);
 const BUSH_DARK: Color = Color::new(0.13, 0.32, 0.16, 1.0);
 const BUSH_LIGHT: Color = Color::new(0.22, 0.50, 0.24, 1.0);
 
-pub struct LamppostPos {
-    pub x: f32,
-    pub y: f32,
-}
-
 /// Renders the entire park nature background using the AI-generated park texture (or procedural fallback),
-/// plus exit roadway connection and ambient lamppost light glows.
+/// plus exit roadway connection.
 pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
     let time = get_time() as f32;
     let sw = layout.screen_width;
@@ -81,84 +71,6 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
 
     // 2. Draw asphalt exit road connecting exit gate to edge of screen
     render_exit_road(board, layout, textures);
-
-    // 3. Draw warm radial light halos for lampposts on ground
-    let lampposts = get_lamppost_positions(board, layout);
-    render_lamppost_glows(&lampposts, layout, time);
-}
-
-/// Renders the physical lamppost fixtures (posts & lantern heads) after the parking box.
-pub fn render_lamppost_fixtures(board: &Board, layout: &BoardLayout) {
-    let time = get_time() as f32;
-    let lampposts = get_lamppost_positions(board, layout);
-    for (idx, lamp) in lampposts.iter().enumerate() {
-        render_single_lamppost_fixture(lamp.x, lamp.y, layout.cell_size, idx, time);
-    }
-}
-
-/// Computes intelligent, non-obstructing positions for lampposts around the parking lot.
-fn get_lamppost_positions(board: &Board, layout: &BoardLayout) -> Vec<LamppostPos> {
-    let ox = layout.origin_x;
-    let oy = layout.origin_y;
-    let bw = layout.total_width;
-    let bh = layout.total_height;
-    let cs = layout.cell_size;
-    let curb_offset = (cs * 0.18).max(8.0);
-
-    let candidates = vec![
-        // Top-Left corner
-        LamppostPos {
-            x: ox - curb_offset,
-            y: oy - curb_offset,
-        },
-        // Top-Right corner
-        LamppostPos {
-            x: ox + bw + curb_offset,
-            y: oy - curb_offset,
-        },
-        // Bottom-Left corner
-        LamppostPos {
-            x: ox - curb_offset,
-            y: oy + bh + curb_offset,
-        },
-        // Bottom-Right corner
-        LamppostPos {
-            x: ox + bw + curb_offset,
-            y: oy + bh + curb_offset,
-        },
-    ];
-
-    // Filter out any candidate that overlaps with the exit road
-    candidates
-        .into_iter()
-        .filter(|lp| !is_in_exit_corridor(lp.x, lp.y, board, layout))
-        .collect()
-}
-
-fn is_in_exit_corridor(x: f32, y: f32, board: &Board, layout: &BoardLayout) -> bool {
-    let cs = layout.cell_size;
-    match board.exit.side {
-        ExitSide::Right => {
-            let row_y = layout.origin_y + board.exit.row as f32 * cs;
-            x >= layout.origin_x + layout.total_width - 4.0
-                && y >= row_y - 8.0
-                && y <= row_y + cs + 8.0
-        }
-        ExitSide::Left => {
-            let row_y = layout.origin_y + board.exit.row as f32 * cs;
-            x <= layout.origin_x + 4.0 && y >= row_y - 8.0 && y <= row_y + cs + 8.0
-        }
-        ExitSide::Bottom => {
-            let col_x = layout.origin_x + board.exit.col as f32 * cs;
-            y >= layout.origin_y + layout.total_height - 4.0
-                && x >= col_x - 8.0
-                && x <= col_x + cs + 8.0
-        }
-        ExitSide::Top => {
-            let col_x = layout.origin_x + board.exit.col as f32 * cs;
-            y <= layout.origin_y + 4.0 && x >= col_x - 8.0 && x <= col_x + cs + 8.0
-        }
-    }
 }
 
 /// Renders the park lawn with soft stripes and grass tufts.
@@ -697,58 +609,4 @@ fn draw_flower_patch(cx: f32, cy: f32, c1: Color, c2: Color) {
     draw_circle(cx + 3.0, cy - 2.0, 1.6, c2);
     draw_circle(cx, cy + 3.0, 1.7, c1);
     draw_circle(cx + 5.0, cy + 4.0, 1.5, c2);
-}
-
-/// Renders warm golden light illumination circles cast on the ground from lampposts.
-fn render_lamppost_glows(lampposts: &[LamppostPos], layout: &BoardLayout, time: f32) {
-    let cs = layout.cell_size;
-    const GLOW_TIERS: [(f32, f32, f32, f32, f32); 4] = [
-        (1.10, 1.0, 0.82, 0.35, 0.05),
-        (0.75, 1.0, 0.84, 0.40, 0.10),
-        (0.48, 1.0, 0.88, 0.48, 0.18),
-        (0.24, 1.0, 0.94, 0.65, 0.32),
-    ];
-
-    for (idx, lamp) in lampposts.iter().enumerate() {
-        let pulse = ((time * 2.8) + idx as f32 * 1.6).sin() * 0.06 + 0.94;
-        let base_r = (cs * 0.95).clamp(38.0, 95.0) * pulse;
-
-        for (r_mult, r, g, b, a) in GLOW_TIERS {
-            draw_circle(lamp.x, lamp.y, base_r * r_mult, Color::new(r, g, b, a));
-        }
-    }
-}
-
-/// Renders an ornamental top-down park lamppost lantern fixture.
-fn render_single_lamppost_fixture(x: f32, y: f32, cell_size: f32, idx: usize, time: f32) {
-    let scale = (cell_size / 70.0).clamp(0.75, 1.4);
-    let base_r = 7.0 * scale;
-    let lantern_sz = 10.0 * scale;
-
-    // 1. Drop shadow of the post base
-    draw_circle(
-        x + 2.0,
-        y + 2.5,
-        base_r + 1.5,
-        Color::new(0.04, 0.08, 0.05, 0.45),
-    );
-
-    // 2. Cast iron pedestal ring
-    draw_circle(x, y, base_r, LAMP_POST_DARK);
-    draw_circle(x, y, base_r - 1.5 * scale, LAMP_BRACKET);
-
-    // 3. Central post collar
-    draw_circle(x, y, 4.0 * scale, LAMP_POST_DARK);
-
-    // 4. Hexagonal / faceted lantern housing
-    draw_poly(x, y, 6, lantern_sz, 0.0, LAMP_POST_DARK);
-    draw_poly(x, y, 6, lantern_sz - 1.5 * scale, 0.0, LAMP_BRACKET);
-
-    // 5. Glowing filament bulb core with subtle breathing pulse
-    let pulse = ((time * 3.5) + idx as f32 * 2.1).sin() * 0.08 + 0.92;
-    draw_circle(x, y, 4.5 * scale * pulse, LAMP_GLOW_AMBER);
-    draw_circle(x, y, 2.8 * scale * pulse, LAMP_BULB);
-
-    // 6. Top finial cap needle
-    draw_circle(x, y, 1.8 * scale, LAMP_POST_DARK);
 }

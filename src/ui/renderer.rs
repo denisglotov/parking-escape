@@ -1,4 +1,4 @@
-use super::background::{render_lamppost_fixtures, render_nature_background};
+use super::background::render_nature_background;
 use super::{BoardLayout, TextureStore, THEME};
 use crate::game::board::{Board, ExitSide};
 use macroquad::prelude::*;
@@ -10,7 +10,7 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
     let bw = layout.total_width;
     let bh = layout.total_height;
 
-    // 1. Draw Nature Background (Park lawn, footpaths, pond with animated ripples, flora, lamppost light halos)
+    // 1. Draw Nature Background (Park lawn, footpaths, pond with animated ripples, flora)
     render_nature_background(board, layout, textures);
 
     // 2. Draw outer drop shadow for the parking lot
@@ -92,9 +92,6 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
 
     // 6. Draw Vehicles
     render_vehicles(board, layout, textures);
-
-    // 7. Draw Lamppost Fixtures
-    render_lamppost_fixtures(board, layout);
 }
 
 fn render_exit_gate(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
