@@ -1,5 +1,4 @@
 pub mod hud;
-pub mod icons;
 pub mod level_select;
 pub mod menu;
 pub mod renderer;
@@ -18,7 +17,6 @@ pub struct UITheme {
     pub accent_green: Color,
     pub text_primary: Color,
     pub text_secondary: Color,
-    pub text_muted: Color,
 }
 
 pub const THEME: UITheme = UITheme {
@@ -31,7 +29,6 @@ pub const THEME: UITheme = UITheme {
     accent_green: Color::new(0.06, 0.73, 0.51, 1.0),
     text_primary: Color::new(0.96, 0.97, 0.99, 1.0),
     text_secondary: Color::new(0.80, 0.84, 0.90, 1.0),
-    text_muted: Color::new(0.45, 0.50, 0.58, 1.0),
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -106,49 +103,33 @@ impl TextureStore {
     pub async fn load_all() -> Self {
         let mut textures = HashMap::new();
 
+        macro_rules! load_tex {
+            ($key:expr, $path:expr) => {
+                textures.insert(
+                    $key.to_string(),
+                    Texture2D::from_file_with_format(include_bytes!($path), Some(ImageFormat::Png)),
+                );
+            };
+        }
+
         // Environment textures
-        textures.insert(
-            "asphalt".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/asphalt.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
-        textures.insert(
-            "stall_marker".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/stall_marker.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
-        textures.insert(
-            "exit_gate".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/exit_gate.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
-        textures.insert(
-            "curb_h".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/curb_horizontal.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
-        textures.insert(
-            "curb_v".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/curb_vertical.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
-        textures.insert(
-            "curb_corner".to_string(),
-            Texture2D::from_file_with_format(
-                include_bytes!("../../assets/environment/curb_corner.png"),
-                Some(ImageFormat::Png),
-            ),
-        );
+        load_tex!("asphalt", "../../assets/environment/asphalt.png");
+        load_tex!("stall_marker", "../../assets/environment/stall_marker.png");
+        load_tex!("exit_gate", "../../assets/environment/exit_gate.png");
+        load_tex!("curb_h", "../../assets/environment/curb_horizontal.png");
+        load_tex!("curb_v", "../../assets/environment/curb_vertical.png");
+        load_tex!("curb_corner", "../../assets/environment/curb_corner.png");
+
+        // UI icon assets
+        load_tex!("badge_parking", "../../assets/ui/badge_parking.png");
+        load_tex!("star_gold", "../../assets/ui/star_gold.png");
+        load_tex!("star_empty", "../../assets/ui/star_empty.png");
+        load_tex!("icon_undo", "../../assets/ui/icon_undo.png");
+        load_tex!("icon_reset", "../../assets/ui/icon_reset.png");
+        load_tex!("icon_back", "../../assets/ui/icon_back.png");
+        load_tex!("icon_sound_on", "../../assets/ui/icon_sound_on.png");
+        load_tex!("icon_sound_off", "../../assets/ui/icon_sound_off.png");
+        load_tex!("trophy_gold", "../../assets/ui/trophy_gold.png");
 
         // Vehicle textures (both H and V)
         macro_rules! load_veh {
@@ -198,6 +179,87 @@ impl TextureStore {
 
     pub fn get(&self, name: &str) -> Option<&Texture2D> {
         self.textures.get(name)
+    }
+
+    pub fn draw_icon_button(
+        &self,
+        tex_key: &str,
+        rect: Rect,
+        enabled: bool,
+        is_mouse_down: bool,
+        mouse_pos: (f32, f32),
+    ) -> bool {
+        let hovered = enabled && rect.contains(vec2(mouse_pos.0, mouse_pos.1));
+
+        let bg_color = if !enabled {
+            Color::new(0.12, 0.13, 0.16, 0.4)
+        } else if hovered {
+            THEME.surface_hover
+        } else {
+            THEME.card_bg
+        };
+
+        draw_rectangle(rect.x, rect.y, rect.w, rect.h, bg_color);
+        draw_rectangle_lines(
+            rect.x,
+            rect.y,
+            rect.w,
+            rect.h,
+            1.5,
+            Color::new(0.3, 0.35, 0.45, if enabled { 0.6 } else { 0.2 }),
+        );
+
+        if let Some(tex) = self.get(tex_key) {
+            let icon_sz = rect.w.min(rect.h) * 0.72;
+            let icon_pad_x = (rect.w - icon_sz) / 2.0;
+            let icon_pad_y = (rect.h - icon_sz) / 2.0;
+            let tint = if !enabled {
+                Color::new(0.5, 0.5, 0.5, 0.4)
+            } else if hovered {
+                WHITE
+            } else {
+                Color::new(0.9, 0.9, 0.9, 0.9)
+            };
+
+            draw_texture_ex(
+                tex,
+                rect.x + icon_pad_x,
+                rect.y + icon_pad_y,
+                tint,
+                DrawTextureParams {
+                    dest_size: Some(vec2(icon_sz, icon_sz)),
+                    ..Default::default()
+                },
+            );
+        }
+
+        hovered && is_mouse_down
+    }
+
+    pub fn draw_star_row(&self, cx: f32, cy: f32, earned: u8, total: u8, size: f32, spacing: f32) {
+        let total_w = total as f32 * size + (total - 1) as f32 * spacing;
+        let start_x = cx - total_w / 2.0;
+
+        for i in 0..total {
+            let sx = start_x + i as f32 * (size + spacing);
+            let tex_name = if i < earned {
+                "star_gold"
+            } else {
+                "star_empty"
+            };
+            if let Some(tex) = self.get(tex_name) {
+                draw_texture_ex(
+                    tex,
+                    sx,
+                    cy - size / 2.0,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(size, size)),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
     }
 }
 

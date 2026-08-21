@@ -4,7 +4,7 @@
 /scratch/
 
 # WebAssembly build outputs
-parking_escape.wasm
+parking-escape.wasm
 
 # Virtual environments & IDEs
 .venv/

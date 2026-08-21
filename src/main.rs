@@ -56,27 +56,36 @@ async fn main() {
         let dt = get_frame_time();
 
         match scene {
-            AppScene::MainMenu => match render_main_menu(sound.enabled, screen_w, screen_h) {
-                MenuAction::Play => {
-                    sound.play(SoundTrigger::ButtonClick);
-                    current_board = repo
-                        .get_level(current_pack, current_level_idx)
-                        .unwrap()
-                        .to_board();
-                    scene = AppScene::Playing;
+            AppScene::MainMenu => {
+                match render_main_menu(sound.enabled, &textures, screen_w, screen_h) {
+                    MenuAction::Play => {
+                        sound.play(SoundTrigger::ButtonClick);
+                        current_board = repo
+                            .get_level(current_pack, current_level_idx)
+                            .unwrap()
+                            .to_board();
+                        scene = AppScene::Playing;
+                    }
+                    MenuAction::SelectLevels => {
+                        sound.play(SoundTrigger::ButtonClick);
+                        scene = AppScene::LevelSelect;
+                    }
+                    MenuAction::ToggleSound => {
+                        sound.toggle_sound();
+                    }
+                    MenuAction::None => {}
                 }
-                MenuAction::SelectLevels => {
-                    sound.play(SoundTrigger::ButtonClick);
-                    scene = AppScene::LevelSelect;
-                }
-                MenuAction::ToggleSound => {
-                    sound.toggle_sound();
-                }
-                MenuAction::None => {}
-            },
+            }
 
             AppScene::LevelSelect => {
-                match render_level_select(&repo, &records, &mut current_pack, screen_w, screen_h) {
+                match render_level_select(
+                    &repo,
+                    &records,
+                    &mut current_pack,
+                    &textures,
+                    screen_w,
+                    screen_h,
+                ) {
                     LevelSelectAction::SelectLevel(pack, idx) => {
                         sound.play(SoundTrigger::ButtonClick);
                         current_pack = pack;
@@ -162,6 +171,7 @@ async fn main() {
                     current_board.move_count,
                     !current_board.history.is_empty(),
                     sound.enabled,
+                    &textures,
                     screen_w,
                 ) {
                     HudAction::BackToMenu => {
@@ -192,6 +202,7 @@ async fn main() {
                         current_level,
                         current_board.move_count,
                         has_next,
+                        &textures,
                         screen_w,
                         screen_h,
                     ) {

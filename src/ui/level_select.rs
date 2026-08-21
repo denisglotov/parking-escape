@@ -1,5 +1,4 @@
-use super::icons::{draw_icon_back, draw_star_rating_row};
-use super::{draw_ui_button, ButtonStyle, THEME};
+use super::{draw_ui_button, ButtonStyle, TextureStore, THEME};
 use crate::game::level::{LevelRecord, LevelRepository, PackType};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -15,6 +14,7 @@ pub fn render_level_select(
     repo: &LevelRepository,
     records: &HashMap<(PackType, usize), LevelRecord>,
     active_pack: &mut PackType,
+    textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
 ) -> LevelSelectAction {
@@ -26,16 +26,16 @@ pub fn render_level_select(
     let header_h = 70.0;
     draw_rectangle(0.0, 0.0, screen_w, header_h, THEME.surface);
 
-    let btn_size = 38.0;
+    let btn_size = 40.0;
     let back_hovered = mouse_pos.0 >= 16.0
-        && mouse_pos.0 <= 16.0 + btn_size + 40.0
-        && mouse_pos.1 >= 16.0
-        && mouse_pos.1 <= 16.0 + btn_size;
+        && mouse_pos.0 <= 16.0 + btn_size + 50.0
+        && mouse_pos.1 >= 15.0
+        && mouse_pos.1 <= 15.0 + btn_size;
 
     draw_rectangle(
         16.0,
-        16.0,
-        btn_size + 40.0,
+        15.0,
+        btn_size + 50.0,
         btn_size,
         if back_hovered {
             THEME.surface_hover
@@ -45,27 +45,34 @@ pub fn render_level_select(
     );
     draw_rectangle_lines(
         16.0,
-        16.0,
-        btn_size + 40.0,
+        15.0,
+        btn_size + 50.0,
         btn_size,
         1.5,
         Color::new(0.3, 0.35, 0.45, 0.6),
     );
-    draw_icon_back(
-        32.0,
-        16.0 + btn_size / 2.0,
-        18.0,
-        if back_hovered {
-            THEME.accent_gold
-        } else {
-            THEME.text_primary
-        },
-    );
+
+    if let Some(back_tex) = textures.get("icon_back") {
+        draw_texture_ex(
+            back_tex,
+            24.0,
+            15.0 + (btn_size - 22.0) / 2.0,
+            if back_hovered {
+                THEME.accent_gold
+            } else {
+                WHITE
+            },
+            DrawTextureParams {
+                dest_size: Some(vec2(22.0, 22.0)),
+                ..Default::default()
+            },
+        );
+    }
     draw_text(
         "Back",
-        46.0,
-        16.0 + btn_size / 2.0 + 5.0,
-        16.0,
+        52.0,
+        15.0 + btn_size / 2.0 + 6.0,
+        18.0,
         if back_hovered {
             THEME.accent_gold
         } else {
@@ -184,16 +191,8 @@ pub fn render_level_select(
             THEME.text_primary,
         );
 
-        // Star rating rendered as crisp vector stars
-        draw_star_rating_row(
-            cx + card_w / 2.0,
-            cy + 74.0,
-            stars,
-            3,
-            8.0,
-            5.0,
-            THEME.accent_gold,
-        );
+        // Star rating
+        textures.draw_star_row(cx + card_w / 2.0, cy + 74.0, stars, 3, 20.0, 4.0);
 
         if hovered && is_mouse_down {
             action = LevelSelectAction::SelectLevel(*active_pack, idx);

@@ -1,5 +1,4 @@
-use super::icons::draw_star_rating_row;
-use super::{draw_ui_button, ButtonStyle, THEME};
+use super::{draw_ui_button, ButtonStyle, TextureStore, THEME};
 use crate::game::level::LevelData;
 use macroquad::prelude::*;
 
@@ -15,6 +14,7 @@ pub fn render_win_modal(
     level: &LevelData,
     moves_taken: u32,
     has_next_level: bool,
+    textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
 ) -> WinModalAction {
@@ -41,7 +41,7 @@ pub fn render_win_modal(
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
 
-    // Title: ESCAPE SUCCESSFUL!
+    // Title: LEVEL CLEARED!
     let title = "LEVEL CLEARED!";
     let title_font_size = 28.0;
     let title_dim = measure_text(title, None, title_font_size as u16, 1.0);
@@ -53,16 +53,15 @@ pub fn render_win_modal(
         THEME.accent_green,
     );
 
-    // Large Animated / Golden Vector Stars
+    // Large 3D Gold Stars
     let stars = level.calculate_stars(moves_taken);
-    draw_star_rating_row(
+    textures.draw_star_row(
         modal_x + modal_w / 2.0,
         modal_y + 104.0,
         stars,
         3,
-        18.0,
-        14.0,
-        THEME.accent_gold,
+        42.0,
+        12.0,
     );
 
     // Moves vs Par moves summary

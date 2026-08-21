@@ -1,5 +1,4 @@
-use super::icons::{draw_icon_sound, draw_parking_badge};
-use super::{draw_ui_button, ButtonStyle, THEME};
+use super::{draw_ui_button, ButtonStyle, TextureStore, THEME};
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,18 +9,33 @@ pub enum MenuAction {
     ToggleSound,
 }
 
-pub fn render_main_menu(sound_enabled: bool, screen_w: f32, screen_h: f32) -> MenuAction {
+pub fn render_main_menu(
+    sound_enabled: bool,
+    textures: &TextureStore,
+    screen_w: f32,
+    screen_h: f32,
+) -> MenuAction {
     let mut action = MenuAction::None;
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
 
-    // Background gradient effect
     draw_rectangle(0.0, 0.0, screen_w, screen_h, THEME.bg_dark);
 
-    // 1. Game Logo Emblem (Parking "P" Shield)
-    let badge_size = 72.0;
-    let logo_y = screen_h * 0.20;
-    draw_parking_badge(screen_w / 2.0, logo_y, badge_size);
+    // 1. Parking Badge Logo
+    let badge_sz = 84.0;
+    let badge_y = screen_h * 0.16;
+    if let Some(badge_tex) = textures.get("badge_parking") {
+        draw_texture_ex(
+            badge_tex,
+            screen_w / 2.0 - badge_sz / 2.0,
+            badge_y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(badge_sz, badge_sz)),
+                ..Default::default()
+            },
+        );
+    }
 
     // 2. Title Typography
     let title = "PARKING ESCAPE";
@@ -30,7 +44,7 @@ pub fn render_main_menu(sound_enabled: bool, screen_w: f32, screen_h: f32) -> Me
     draw_text(
         title,
         screen_w / 2.0 - title_dim.width / 2.0,
-        logo_y + badge_size / 2.0 + 44.0,
+        badge_y + badge_sz + 44.0,
         title_font_size,
         THEME.text_primary,
     );
@@ -40,7 +54,7 @@ pub fn render_main_menu(sound_enabled: bool, screen_w: f32, screen_h: f32) -> Me
     draw_text(
         subtitle,
         screen_w / 2.0 - sub_dim.width / 2.0,
-        logo_y + badge_size / 2.0 + 72.0,
+        badge_y + badge_sz + 72.0,
         18.0,
         THEME.accent_blue,
     );
@@ -103,19 +117,24 @@ pub fn render_main_menu(sound_enabled: bool, screen_w: f32, screen_h: f32) -> Me
         action = MenuAction::ToggleSound;
     }
 
-    // Draw sound icon inside button
-    let icon_sz = 20.0;
-    draw_icon_sound(
-        btn_x + 36.0,
-        btn_y + btn_h / 2.0,
-        icon_sz,
-        sound_enabled,
-        if sound_enabled {
-            THEME.accent_gold
-        } else {
-            THEME.text_muted
-        },
-    );
+    // Sound Icon inside button
+    let sound_tex_key = if sound_enabled {
+        "icon_sound_on"
+    } else {
+        "icon_sound_off"
+    };
+    if let Some(snd_tex) = textures.get(sound_tex_key) {
+        draw_texture_ex(
+            snd_tex,
+            btn_x + 20.0,
+            btn_y + (btn_h - 26.0) / 2.0,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(26.0, 26.0)),
+                ..Default::default()
+            },
+        );
+    }
 
     action
 }
