@@ -200,12 +200,13 @@ impl TextureStore {
         };
 
         draw_rectangle(rect.x, rect.y, rect.w, rect.h, bg_color);
+        let border_width = (rect.w * 0.04).clamp(1.5, 4.0);
         draw_rectangle_lines(
             rect.x,
             rect.y,
             rect.w,
             rect.h,
-            1.5,
+            border_width,
             Color::new(0.3, 0.35, 0.45, if enabled { 0.6 } else { 0.2 }),
         );
 
@@ -263,6 +264,33 @@ impl TextureStore {
     }
 }
 
+/// Scaling metrics and helper methods for responsive UI across all screen densities.
+#[derive(Debug, Clone, Copy)]
+pub struct UiMetrics {
+    pub scale: f32,
+    pub hud_height: f32,
+}
+
+impl UiMetrics {
+    pub const BASE_WIDTH: f32 = 540.0;
+    pub const BASE_HEIGHT: f32 = 800.0;
+
+    pub fn new(screen_w: f32, screen_h: f32) -> Self {
+        let scale_w = screen_w / Self::BASE_WIDTH;
+        let scale_h = screen_h / Self::BASE_HEIGHT;
+        // In portrait mode, scale based on width, but guard against extreme landscape/stretched aspect ratios
+        let scale = scale_w.min(scale_h * 1.25).clamp(0.75, 4.0);
+        let hud_height = (76.0 * scale).round();
+
+        Self { scale, hud_height }
+    }
+
+    /// Scale a base pixel value proportionally.
+    pub fn s(&self, val: f32) -> f32 {
+        (val * self.scale).round()
+    }
+}
+
 /// Computes responsive board layout positioning and cell sizing.
 #[derive(Debug, Clone, Copy)]
 pub struct BoardLayout {
@@ -271,18 +299,24 @@ pub struct BoardLayout {
     pub cell_size: f32,
     pub total_width: f32,
     pub total_height: f32,
+    pub hud_height: f32,
 }
 
 impl BoardLayout {
     pub fn calculate(screen_w: f32, screen_h: f32, grid_w: i32, grid_h: i32) -> Self {
-        let top_hud_height = 90.0;
-        let bottom_margin = 40.0;
+        let metrics = UiMetrics::new(screen_w, screen_h);
+        let top_hud_height = metrics.hud_height + metrics.s(16.0);
+        let bottom_margin = metrics.s(32.0);
         let available_w = screen_w * 0.92;
         let available_h = (screen_h - top_hud_height - bottom_margin).max(100.0);
 
         let cell_size_by_w = available_w / grid_w as f32;
         let cell_size_by_h = available_h / grid_h as f32;
-        let cell_size = cell_size_by_w.min(cell_size_by_h).clamp(32.0, 110.0);
+        let min_cell_size = metrics.s(28.0);
+        let max_cell_size = metrics.s(200.0);
+        let cell_size = cell_size_by_w
+            .min(cell_size_by_h)
+            .clamp(min_cell_size, max_cell_size);
 
         let total_width = cell_size * grid_w as f32;
         let total_height = cell_size * grid_h as f32;
@@ -296,6 +330,7 @@ impl BoardLayout {
             cell_size,
             total_width,
             total_height,
+            hud_height: metrics.hud_height,
         }
     }
 }

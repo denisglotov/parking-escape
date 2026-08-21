@@ -118,7 +118,7 @@ async fn main() {
 
                 // Touch & Drag interaction
                 let mouse_pos = mouse_position();
-                let mouse_y_in_board = mouse_pos.1 > 80.0;
+                let mouse_y_in_board = mouse_pos.1 > layout.hud_height;
 
                 if scene == AppScene::Playing {
                     if is_mouse_button_pressed(MouseButton::Left) && mouse_y_in_board {

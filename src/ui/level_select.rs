@@ -1,4 +1,4 @@
-use super::{draw_ui_button, ButtonStyle, TextureStore, THEME};
+use super::{draw_ui_button, ButtonStyle, TextureStore, UiMetrics, THEME};
 use crate::game::level::{LevelRecord, LevelRepository, PackType};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -21,22 +21,36 @@ pub fn render_level_select(
     let mut action = LevelSelectAction::None;
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
+    let metrics = UiMetrics::new(screen_w, screen_h);
 
     // 1. Header Bar
-    let header_h = 70.0;
+    let header_h = metrics.hud_height;
     draw_rectangle(0.0, 0.0, screen_w, header_h, THEME.surface);
+    let border_thick = (1.5 * metrics.scale).max(1.0);
+    draw_line(
+        0.0,
+        header_h,
+        screen_w,
+        header_h,
+        border_thick,
+        Color::new(0.2, 0.24, 0.32, 0.6),
+    );
 
-    let btn_size = 40.0;
-    let back_hovered = mouse_pos.0 >= 16.0
-        && mouse_pos.0 <= 16.0 + btn_size + 50.0
-        && mouse_pos.1 >= 15.0
-        && mouse_pos.1 <= 15.0 + btn_size;
+    let btn_h = metrics.s(44.0);
+    let btn_w = metrics.s(96.0);
+    let btn_pad_x = metrics.s(16.0);
+    let btn_y = (header_h - btn_h) / 2.0;
+
+    let back_hovered = mouse_pos.0 >= btn_pad_x
+        && mouse_pos.0 <= btn_pad_x + btn_w
+        && mouse_pos.1 >= btn_y
+        && mouse_pos.1 <= btn_y + btn_h;
 
     draw_rectangle(
-        16.0,
-        15.0,
-        btn_size + 50.0,
-        btn_size,
+        btn_pad_x,
+        btn_y,
+        btn_w,
+        btn_h,
         if back_hovered {
             THEME.surface_hover
         } else {
@@ -44,35 +58,38 @@ pub fn render_level_select(
         },
     );
     draw_rectangle_lines(
-        16.0,
-        15.0,
-        btn_size + 50.0,
-        btn_size,
-        1.5,
+        btn_pad_x,
+        btn_y,
+        btn_w,
+        btn_h,
+        (1.5 * metrics.scale).max(1.0),
         Color::new(0.3, 0.35, 0.45, 0.6),
     );
 
+    let icon_sz = metrics.s(22.0);
     if let Some(back_tex) = textures.get("icon_back") {
         draw_texture_ex(
             back_tex,
-            24.0,
-            15.0 + (btn_size - 22.0) / 2.0,
+            btn_pad_x + metrics.s(8.0),
+            btn_y + (btn_h - icon_sz) / 2.0,
             if back_hovered {
                 THEME.accent_gold
             } else {
                 WHITE
             },
             DrawTextureParams {
-                dest_size: Some(vec2(22.0, 22.0)),
+                dest_size: Some(vec2(icon_sz, icon_sz)),
                 ..Default::default()
             },
         );
     }
+    let back_text_size = metrics.s(18.0);
+    let back_dim = measure_text("Back", None, back_text_size as u16, 1.0);
     draw_text(
         "Back",
-        52.0,
-        15.0 + btn_size / 2.0 + 6.0,
-        18.0,
+        btn_pad_x + icon_sz + metrics.s(14.0),
+        btn_y + (btn_h + back_dim.height) / 2.0 - metrics.s(2.0),
+        back_text_size,
         if back_hovered {
             THEME.accent_gold
         } else {
@@ -85,12 +102,13 @@ pub fn render_level_select(
     }
 
     let header_title = "SELECT LEVEL";
-    let title_dim = measure_text(header_title, None, 24, 1.0);
+    let title_font_size = metrics.s(24.0);
+    let title_dim = measure_text(header_title, None, title_font_size as u16, 1.0);
     draw_text(
         header_title,
         screen_w / 2.0 - title_dim.width / 2.0,
-        42.0,
-        24.0,
+        header_h / 2.0 + title_dim.height / 2.0 - metrics.s(2.0),
+        title_font_size,
         THEME.text_primary,
     );
 
@@ -101,14 +119,16 @@ pub fn render_level_select(
         (PackType::Grid10x10, "10x10 Expert"),
     ];
 
-    let tab_w = ((screen_w - 48.0) / 3.0).min(180.0);
-    let tab_h = 44.0;
-    let tab_y = 86.0;
-    let total_tabs_w = tab_w * 3.0 + 24.0;
+    let tab_gap = metrics.s(8.0);
+    let tab_padding = metrics.s(16.0);
+    let tab_w = ((screen_w - tab_padding * 2.0 - tab_gap * 2.0) / 3.0).min(metrics.s(220.0));
+    let tab_h = metrics.s(44.0);
+    let tab_y = header_h + metrics.s(16.0);
+    let total_tabs_w = tab_w * 3.0 + tab_gap * 2.0;
     let tab_start_x = (screen_w - total_tabs_w) / 2.0;
 
     for (i, (pack, label)) in tabs.iter().enumerate() {
-        let tx = tab_start_x + i as f32 * (tab_w + 12.0);
+        let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
         let is_selected = *active_pack == *pack;
 
         let bg_col = if is_selected {
@@ -122,7 +142,8 @@ pub fn render_level_select(
             label,
             ButtonStyle {
                 bg_color: bg_col,
-                font_size: 16.0,
+                font_size: metrics.s(15.0),
+                border_width: (1.5 * metrics.scale).max(1.0),
                 ..Default::default()
             },
             mouse_pos,
@@ -134,14 +155,20 @@ pub fn render_level_select(
 
     // 3. Level Grid Cards
     let levels = repo.get_pack(*active_pack);
-    let grid_y = tab_y + tab_h + 30.0;
-    let card_w = 110.0;
-    let card_h = 100.0;
-    let spacing = 16.0;
+    let grid_y = tab_y + tab_h + metrics.s(24.0);
+    let cols: usize = if screen_w > metrics.s(720.0) { 4 } else { 3 };
+    let spacing = metrics.s(16.0);
+    let grid_side_padding = metrics.s(20.0);
+    let total_spacing = spacing * (cols - 1) as f32;
+    let available_grid_w = screen_w - grid_side_padding * 2.0;
+    let card_w = ((available_grid_w - total_spacing) / cols as f32).min(metrics.s(180.0));
+    let card_h = (card_w * 0.90).round();
+    let actual_grid_w = cols as f32 * card_w + total_spacing;
+    let grid_start_x = (screen_w - actual_grid_w) / 2.0;
 
-    let cols = ((screen_w - 32.0) / (card_w + spacing)).floor().max(1.0) as usize;
-    let total_grid_w = cols as f32 * card_w + (cols - 1) as f32 * spacing;
-    let grid_start_x = (screen_w - total_grid_w) / 2.0;
+    let card_num_font = metrics.s(28.0);
+    let star_size = (card_w * 0.18).clamp(metrics.s(16.0), metrics.s(28.0));
+    let star_spacing = metrics.s(4.0);
 
     for (idx, lvl) in levels.iter().enumerate() {
         let row = idx / cols;
@@ -149,7 +176,7 @@ pub fn render_level_select(
         let cx = grid_start_x + col as f32 * (card_w + spacing);
         let cy = grid_y + row as f32 * (card_h + spacing);
 
-        if cy + card_h > screen_h - 20.0 {
+        if cy + card_h > screen_h - metrics.s(16.0) {
             break;
         }
 
@@ -178,21 +205,29 @@ pub fn render_level_select(
         } else {
             Color::new(0.25, 0.3, 0.4, 0.5)
         };
-        draw_rectangle_lines(cx, cy, card_w, card_h, 2.0, border_col);
+        let card_border = (2.0 * metrics.scale).max(1.5);
+        draw_rectangle_lines(cx, cy, card_w, card_h, card_border, border_col);
 
         // Level Number
         let num_str = format!("{}", lvl.id);
-        let num_dim = measure_text(&num_str, None, 28, 1.0);
+        let num_dim = measure_text(&num_str, None, card_num_font as u16, 1.0);
         draw_text(
             &num_str,
             cx + (card_w - num_dim.width) / 2.0,
-            cy + 42.0,
-            28.0,
+            cy + card_h * 0.44,
+            card_num_font,
             THEME.text_primary,
         );
 
         // Star rating
-        textures.draw_star_row(cx + card_w / 2.0, cy + 74.0, stars, 3, 20.0, 4.0);
+        textures.draw_star_row(
+            cx + card_w / 2.0,
+            cy + card_h * 0.74,
+            stars,
+            3,
+            star_size,
+            star_spacing,
+        );
 
         if hovered && is_mouse_down {
             action = LevelSelectAction::SelectLevel(*active_pack, idx);
