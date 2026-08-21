@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Parking Escape - Dynamic Sliding Logic Puzzle</title>
+    <meta
+      name="description"
+      content="Parking Escape - dynamic sliding-block logic puzzle game written in Rust & Macroquad, compiled to WebAssembly."
+    />
+    <meta name="theme-color" content="#1a1c23" />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #12141a;
+        font-family: system-ui, -apple-system, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+      }
+      #glcanvas {
+        width: 100%;
+        height: 100%;
+        max-width: 900px;
+        max-height: 900px;
+        display: block;
+        outline: none;
+        flex: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+
+    <script>
+      window.parkingAudioCtx = null;
+      window.parkingAudioUnlocked = false;
+
+      const fetchedBuffers = {};
+      const audioBuffers = {};
+
+      (function preloadBytes() {
+        const files = ['slide', 'bump', 'win', 'click', 'exit_drive'];
+        for (const file of files) {
+          fetch(`assets/audio/${file}.wav`)
+            .then((r) => r.arrayBuffer())
+            .then((b) => (fetchedBuffers[file] = b))
+            .catch((e) => console.debug('Audio preload skipped for:', file));
+        }
+      })();
+
+      async function decodeAll(ctx) {
+        for (const [file, buffer] of Object.entries(fetchedBuffers)) {
+          if (!audioBuffers[file]) {
+            try {
+              audioBuffers[file] = await ctx.decodeAudioData(buffer.slice(0));
+            } catch (e) {}
+          }
+        }
+      }
+
+      function getParkingAudioCtx() {
+        if (!window.parkingAudioCtx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            window.parkingAudioCtx = new AudioCtx();
+            decodeAll(window.parkingAudioCtx);
+          }
+        }
+        return window.parkingAudioCtx;
+      }
+
+      function unlockAudioContext() {
+        let ctx = getParkingAudioCtx();
+        if (!ctx) return;
+
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+
+        if (!window.parkingAudioUnlocked) {
+          const buffer = ctx.createBuffer(1, 1, 22050);
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ctx.destination);
+          if (source.start) source.start(0);
+          else if (source.play) source.play(0);
+
+          window.parkingAudioUnlocked = true;
+        }
+      }
+
+      ['click', 'mousedown', 'pointerdown', 'keydown', 'touchstart'].forEach((evt) => {
+        window.addEventListener(
+          evt,
+          (e) => {
+            if (
+              e.type === 'keydown' &&
+              (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Shift')
+            ) {
+              return;
+            }
+            unlockAudioContext();
+          },
+          { capture: true }
+        );
+      });
+
+      window.parkingPlaySound = function (type) {
+        let ctx = getParkingAudioCtx();
+        if (!ctx) return;
+
+        if (ctx.state === 'suspended') {
+          ctx
+            .resume()
+            .then(() => playBuffer(ctx, type))
+            .catch((e) => console.warn('Audio blocked', e));
+        } else {
+          playBuffer(ctx, type);
+        }
+      };
+
+      async function playBuffer(ctx, type) {
+        await decodeAll(ctx);
+        const buffer = audioBuffers[type];
+        if (!buffer) return;
+
+        try {
+          let source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ctx.destination);
+          source.start(0);
+        } catch (e) {
+          console.error('Audio playback failed', e);
+        }
+      }
+    </script>
+    <script>
+      const script = document.createElement('script');
+      script.src = 'mq_js_bundle.js?t=' + Date.now();
+      script.onload = function () {
+        miniquad_add_plugin({
+          register_plugin: function (env_obj) {
+            env_obj.env.play_sound_slide = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound('slide');
+            };
+            env_obj.env.play_sound_bump = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound('bump');
+            };
+            env_obj.env.play_sound_win = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound('win');
+            };
+            env_obj.env.play_sound_click = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound('click');
+            };
+            env_obj.env.play_sound_exit = function () {
+              if (window.parkingPlaySound) window.parkingPlaySound('exit_drive');
+            };
+          },
+          version: 1,
+          name: 'parking_audio',
+        });
+        load('parking-escape.wasm?t=' + Date.now());
+      };
+
+      document.head.appendChild(script);
+    </script>
+  </body>
+</html>

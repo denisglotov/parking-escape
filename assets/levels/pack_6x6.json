@@ -1,0 +1,364 @@
+[
+  {
+    "id": 1,
+    "name": "First Escape",
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "c1",
+        "kind": "car_sedan_blue",
+        "x": 3,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c2",
+        "kind": "car_taxi_yellow",
+        "x": 0,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "t1",
+        "kind": "truck_delivery",
+        "x": 4,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      }
+    ],
+    "par_moves": 4
+  },
+  {
+    "id": 2,
+    "name": "The Blockade",
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "c1",
+        "kind": "car_taxi_yellow",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c2",
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c3",
+        "kind": "car_police",
+        "x": 0,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t1",
+        "kind": "limo_white",
+        "x": 3,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c4",
+        "kind": "car_hatchback_green",
+        "x": 1,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 3
+  },
+  {
+    "id": 3,
+    "name": "Crossroads",
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "c1",
+        "kind": "car_sedan_blue",
+        "x": 0,
+        "y": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c2",
+        "kind": "car_taxi_yellow",
+        "x": 1,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "t1",
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c3",
+        "kind": "car_police",
+        "x": 4,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t2",
+        "kind": "ambulance",
+        "x": 0,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c4",
+        "kind": "car_hatchback_green",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      }
+    ],
+    "par_moves": 4
+  },
+  {
+    "id": 4,
+    "name": "Twin Obstacles",
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "c1",
+        "kind": "car_taxi_yellow",
+        "x": 0,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c2",
+        "kind": "car_police",
+        "x": 2,
+        "y": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t1",
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c3",
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c4",
+        "kind": "car_hatchback_green",
+        "x": 2,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t2",
+        "kind": "ambulance",
+        "x": 0,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c5",
+        "kind": "car_taxi_yellow",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      }
+    ],
+    "par_moves": 3
+  },
+  {
+    "id": 5,
+    "name": "Gridlock Rush",
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "c1",
+        "kind": "car_police",
+        "x": 0,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c2",
+        "kind": "car_sedan_blue",
+        "x": 0,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c3",
+        "kind": "car_taxi_yellow",
+        "x": 3,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t1",
+        "kind": "limo_white",
+        "x": 4,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "t2",
+        "kind": "ambulance",
+        "x": 0,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "c4",
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "c5",
+        "kind": "car_sedan_blue",
+        "x": 1,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 4
+  }
+]

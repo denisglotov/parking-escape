@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <add-resource name="ic_launcher_background" type="color"/>
+    <color name="ic_launcher_background">#07090E</color>
+</resources>
+
