@@ -7,6 +7,16 @@ pub enum Orientation {
     Vertical,
 }
 
+impl Orientation {
+    /// Returns an iterator of grid coordinates occupied starting from (x, y) for a given length.
+    pub fn cells(self, x: i32, y: i32, length: i32) -> impl Iterator<Item = (i32, i32)> {
+        (0..length).map(move |i| match self {
+            Self::Horizontal => (x + i, y),
+            Self::Vertical => (x, y + i),
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum VehicleKind {
@@ -100,19 +110,16 @@ impl Vehicle {
         }
     }
 
-    /// Returns an iterator of grid coordinates occupied by this vehicle.
-    pub fn occupied_cells(&self) -> impl Iterator<Item = (i32, i32)> + '_ {
-        let (vx, vy, len, orient) = (self.x, self.y, self.length, self.orientation);
-        (0..len).map(move |i| match orient {
-            Orientation::Horizontal => (vx + i, vy),
-            Orientation::Vertical => (vx, vy + i),
-        })
-    }
-
-    /// Checks whether a given grid coordinate is occupied by this vehicle.
+    /// Checks whether a given grid coordinate is occupied by this vehicle in O(1).
     pub fn contains_cell(&self, cell_x: i32, cell_y: i32) -> bool {
-        self.occupied_cells()
-            .any(|(cx, cy)| cx == cell_x && cy == cell_y)
+        match self.orientation {
+            Orientation::Horizontal => {
+                cell_y == self.y && cell_x >= self.x && cell_x < self.x + self.length
+            }
+            Orientation::Vertical => {
+                cell_x == self.x && cell_y >= self.y && cell_y < self.y + self.length
+            }
+        }
     }
 
     /// Returns the pixel bounding box for rendering and touch hit testing.

@@ -49,6 +49,14 @@ pub struct LevelRecord {
     pub stars: u8,
 }
 
+impl LevelRecord {
+    pub fn record_win(&mut self, moves: u32, stars: u8) {
+        self.completed = true;
+        self.stars = self.stars.max(stars);
+        self.best_moves = Some(self.best_moves.map_or(moves, |m| m.min(moves)));
+    }
+}
+
 pub struct LevelRepository {
     pub pack_6x6: Vec<LevelData>,
     pub pack_8x8: Vec<LevelData>,

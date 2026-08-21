@@ -145,17 +145,13 @@ async fn main() {
                         current_board.update_exit_animation(dt);
                         if current_board.exit_animation_progress >= 0.85 {
                             // Record completion stats
-                            let record = records
+                            records
                                 .entry((current_pack, current_level_idx))
-                                .or_default();
-                            record.completed = true;
-                            record.stars = record
-                                .stars
-                                .max(current_level.calculate_stars(current_board.move_count));
-                            record.best_moves =
-                                Some(record.best_moves.map_or(current_board.move_count, |m| {
-                                    m.min(current_board.move_count)
-                                }));
+                                .or_default()
+                                .record_win(
+                                    current_board.move_count,
+                                    current_level.calculate_stars(current_board.move_count),
+                                );
 
                             scene = AppScene::LevelComplete;
                         }

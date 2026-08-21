@@ -121,9 +121,6 @@ impl TextureStore {
         load_tex!("asphalt", "../../assets/environment/asphalt.png");
         load_tex!("stall_marker", "../../assets/environment/stall_marker.png");
         load_tex!("exit_gate", "../../assets/environment/exit_gate.png");
-        load_tex!("curb_h", "../../assets/environment/curb_horizontal.png");
-        load_tex!("curb_v", "../../assets/environment/curb_vertical.png");
-        load_tex!("curb_corner", "../../assets/environment/curb_corner.png");
 
         // UI icon assets
         load_tex!("badge_parking", "../../assets/ui/badge_parking.png");
@@ -134,7 +131,6 @@ impl TextureStore {
         load_tex!("icon_back", "../../assets/ui/icon_back.png");
         load_tex!("icon_sound_on", "../../assets/ui/icon_sound_on.png");
         load_tex!("icon_sound_off", "../../assets/ui/icon_sound_off.png");
-        load_tex!("trophy_gold", "../../assets/ui/trophy_gold.png");
 
         // Vehicle textures (both H and V)
         macro_rules! load_veh {

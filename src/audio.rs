@@ -116,8 +116,7 @@ impl SoundManager {
         }
     }
 
-    pub fn toggle_sound(&mut self) -> bool {
+    pub fn toggle_sound(&mut self) {
         self.enabled = !self.enabled;
-        self.enabled
     }
 }

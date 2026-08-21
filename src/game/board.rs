@@ -20,6 +20,27 @@ pub struct ExitPosition {
     pub col: i32,
 }
 
+impl ExitPosition {
+    /// Checks if a vehicle at the given position reaches the exit.
+    pub fn is_reached(
+        &self,
+        orient: Orientation,
+        x: i32,
+        y: i32,
+        length: i32,
+        width: i32,
+        height: i32,
+    ) -> bool {
+        match (self.side, orient) {
+            (ExitSide::Right, Orientation::Horizontal) => y == self.row && x + length >= width,
+            (ExitSide::Left, Orientation::Horizontal) => y == self.row && x <= 0,
+            (ExitSide::Bottom, Orientation::Vertical) => x == self.col && y + length >= height,
+            (ExitSide::Top, Orientation::Vertical) => x == self.col && y <= 0,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct BoardSnapshot {
     pub positions: Vec<(i32, i32)>,
@@ -94,38 +115,22 @@ impl Board {
         let v = &self.vehicles[vehicle_idx];
         let (vx, vy, vlen, orient) = (v.x, v.y, v.length, v.orientation);
 
-        match orient {
-            Orientation::Horizontal => {
-                let steps_left = (1..=vx)
-                    .take_while(|step| self.is_cell_free(vx - step, vy, Some(vehicle_idx)))
-                    .count() as i32;
-                let min_offset = -steps_left;
+        let (pos, max_dim) = match orient {
+            Orientation::Horizontal => (vx, self.width),
+            Orientation::Vertical => (vy, self.height),
+        };
 
-                let steps_right = (1..=(self.width - (vx + vlen)))
-                    .take_while(|step| {
-                        self.is_cell_free(vx + vlen - 1 + step, vy, Some(vehicle_idx))
-                    })
-                    .count() as i32;
-                let max_offset = steps_right;
+        let is_free = |p: i32| match orient {
+            Orientation::Horizontal => self.is_cell_free(p, vy, Some(vehicle_idx)),
+            Orientation::Vertical => self.is_cell_free(vx, p, Some(vehicle_idx)),
+        };
 
-                (min_offset, max_offset)
-            }
-            Orientation::Vertical => {
-                let steps_up = (1..=vy)
-                    .take_while(|step| self.is_cell_free(vx, vy - step, Some(vehicle_idx)))
-                    .count() as i32;
-                let min_offset = -steps_up;
+        let min_offset = -((1..=pos).take_while(|&step| is_free(pos - step)).count() as i32);
+        let max_offset = (1..=(max_dim - (pos + vlen)))
+            .take_while(|&step| is_free(pos + vlen - 1 + step))
+            .count() as i32;
 
-                let steps_down = (1..=(self.height - (vy + vlen)))
-                    .take_while(|step| {
-                        self.is_cell_free(vx, vy + vlen - 1 + step, Some(vehicle_idx))
-                    })
-                    .count() as i32;
-                let max_offset = steps_down;
-
-                (min_offset, max_offset)
-            }
-        }
+        (min_offset, max_offset)
     }
 
     /// Handles pointer/touch down event. Returns true if a vehicle was selected.
@@ -206,15 +211,9 @@ impl Board {
                 (v.is_player, v.orientation, v.x, v.y, v.length);
 
             if is_player
-                && check_win_condition_raw(
-                    self.exit,
-                    orientation,
-                    vx,
-                    vy,
-                    vlen,
-                    self.width,
-                    self.height,
-                )
+                && self
+                    .exit
+                    .is_reached(orientation, vx, vy, vlen, self.width, self.height)
             {
                 self.is_won = true;
                 return Some(SoundTrigger::Win);
@@ -230,13 +229,12 @@ impl Board {
 
     /// Undoes the last vehicle move. Returns true if successful.
     pub fn undo(&mut self) -> bool {
-        if self.is_won || self.history.is_empty() {
+        if self.is_won {
             return false;
         }
 
         if let Some(snapshot) = self.history.pop() {
-            for (veh, (saved_x, saved_y)) in self.vehicles.iter_mut().zip(snapshot.positions.iter())
-            {
+            for (veh, (saved_x, saved_y)) in self.vehicles.iter_mut().zip(&snapshot.positions) {
                 veh.x = *saved_x;
                 veh.y = *saved_y;
                 veh.drag_offset = 0.0;
@@ -267,24 +265,6 @@ impl Board {
         } else {
             false
         }
-    }
-}
-
-fn check_win_condition_raw(
-    exit: ExitPosition,
-    orient: Orientation,
-    x: i32,
-    y: i32,
-    length: i32,
-    width: i32,
-    height: i32,
-) -> bool {
-    match (exit.side, orient) {
-        (ExitSide::Right, Orientation::Horizontal) => y == exit.row && x + length >= width,
-        (ExitSide::Left, Orientation::Horizontal) => y == exit.row && x <= 0,
-        (ExitSide::Bottom, Orientation::Vertical) => x == exit.col && y + length >= height,
-        (ExitSide::Top, Orientation::Vertical) => x == exit.col && y <= 0,
-        _ => false,
     }
 }
 

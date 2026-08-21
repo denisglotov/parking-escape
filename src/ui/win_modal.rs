@@ -134,15 +134,17 @@ pub fn render_win_modal(
     }
 
     let half_w = (btn_w - btn_spacing) / 2.0;
+    let secondary_style = ButtonStyle {
+        bg_color: THEME.surface,
+        text_color: THEME.text_secondary,
+        font_size: btn_font_size,
+        border_width: btn_border,
+    };
+
     if draw_ui_button(
         Rect::new(modal_x + metrics.s(24.0), btn_y, half_w, btn_h),
         "REPLAY",
-        ButtonStyle {
-            bg_color: THEME.surface,
-            text_color: THEME.text_secondary,
-            font_size: btn_font_size,
-            border_width: btn_border,
-        },
+        secondary_style,
         mouse_pos,
         is_mouse_down,
     ) {
@@ -157,12 +159,7 @@ pub fn render_win_modal(
             btn_h,
         ),
         "MENU",
-        ButtonStyle {
-            bg_color: THEME.surface,
-            text_color: THEME.text_secondary,
-            font_size: btn_font_size,
-            border_width: btn_border,
-        },
+        secondary_style,
         mouse_pos,
         is_mouse_down,
     ) {

@@ -41,10 +41,8 @@ pub fn render_level_select(
     let btn_pad_x = metrics.s(16.0);
     let btn_y = (header_h - btn_h) / 2.0;
 
-    let back_hovered = mouse_pos.0 >= btn_pad_x
-        && mouse_pos.0 <= btn_pad_x + btn_w
-        && mouse_pos.1 >= btn_y
-        && mouse_pos.1 <= btn_y + btn_h;
+    let btn_rect = Rect::new(btn_pad_x, btn_y, btn_w, btn_h);
+    let back_hovered = btn_rect.contains(vec2(mouse_pos.0, mouse_pos.1));
 
     draw_rectangle(
         btn_pad_x,
@@ -184,10 +182,7 @@ pub fn render_level_select(
         let is_completed = record.is_some_and(|r| r.completed);
         let stars = record.map_or(0, |r| r.stars);
 
-        let hovered = mouse_pos.0 >= cx
-            && mouse_pos.0 <= cx + card_w
-            && mouse_pos.1 >= cy
-            && mouse_pos.1 <= cy + card_h;
+        let hovered = Rect::new(cx, cy, card_w, card_h).contains(vec2(mouse_pos.0, mouse_pos.1));
 
         let bg = if hovered {
             THEME.surface_hover

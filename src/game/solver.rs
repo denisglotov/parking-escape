@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::board::{ExitPosition, ExitSide};
+use super::board::ExitPosition;
 use super::vehicle::{Orientation, Vehicle};
 use std::collections::{HashSet, VecDeque};
 
@@ -21,21 +21,9 @@ pub fn solve(width: i32, height: i32, exit: ExitPosition, vehicles: &[Vehicle]) 
 
     while let Some((state, moves)) = queue.pop_front() {
         let (px, py) = state.0[player_idx];
-        let player_len = vehicles[player_idx].length;
+        let player = &vehicles[player_idx];
 
-        let is_at_exit = match (exit.side, vehicles[player_idx].orientation) {
-            (ExitSide::Right, Orientation::Horizontal) => {
-                py == exit.row && px + player_len >= width
-            }
-            (ExitSide::Left, Orientation::Horizontal) => py == exit.row && px <= 0,
-            (ExitSide::Bottom, Orientation::Vertical) => {
-                px == exit.col && py + player_len >= height
-            }
-            (ExitSide::Top, Orientation::Vertical) => px == exit.col && py <= 0,
-            _ => false,
-        };
-
-        if is_at_exit {
+        if exit.is_reached(player.orientation, px, py, player.length, width, height) {
             return Some(moves + 1);
         }
 
@@ -59,14 +47,8 @@ fn generate_next_states(
     let occupied: HashSet<(i32, i32)> = current
         .0
         .iter()
-        .zip(vehicles.iter())
-        .flat_map(|(&(vx, vy), veh)| {
-            let (len, orient) = (veh.length, veh.orientation);
-            (0..len).map(move |i| match orient {
-                Orientation::Horizontal => (vx + i, vy),
-                Orientation::Vertical => (vx, vy + i),
-            })
-        })
+        .zip(vehicles)
+        .flat_map(|(&(vx, vy), veh)| veh.orientation.cells(vx, vy, veh.length))
         .collect();
 
     current
@@ -77,12 +59,7 @@ fn generate_next_states(
             let veh = &vehicles[idx];
             let (vlen, orient) = (veh.length, veh.orientation);
 
-            let own_cells: HashSet<(i32, i32)> = (0..vlen)
-                .map(|k| match orient {
-                    Orientation::Horizontal => (vx + k, vy),
-                    Orientation::Vertical => (vx, vy + k),
-                })
-                .collect();
+            let own_cells: HashSet<(i32, i32)> = orient.cells(vx, vy, vlen).collect();
 
             let is_cell_free = |cx: i32, cy: i32| {
                 cx >= 0
@@ -94,53 +71,46 @@ fn generate_next_states(
 
             let mut valid_moves = Vec::new();
 
-            match orient {
-                Orientation::Horizontal => {
-                    for step in 1..=vx {
-                        let target_x = vx - step;
-                        if is_cell_free(target_x, vy) {
-                            let mut next = current.0.clone();
-                            next[idx] = (target_x, vy);
-                            valid_moves.push(BoardState(next));
-                        } else {
-                            break;
-                        }
-                    }
-                    for step in 1..=(width - (vx + vlen)) {
-                        let target_x = vx + step;
-                        let front_x = vx + vlen - 1 + step;
-                        if is_cell_free(front_x, vy) {
-                            let mut next = current.0.clone();
-                            next[idx] = (target_x, vy);
-                            valid_moves.push(BoardState(next));
-                        } else {
-                            break;
-                        }
-                    }
+            let (pos, max_dim) = match orient {
+                Orientation::Horizontal => (vx, width),
+                Orientation::Vertical => (vy, height),
+            };
+
+            // Negative direction (backwards)
+            for step in 1..=pos {
+                let target = pos - step;
+                let free = match orient {
+                    Orientation::Horizontal => is_cell_free(target, vy),
+                    Orientation::Vertical => is_cell_free(vx, target),
+                };
+                if !free {
+                    break;
                 }
-                Orientation::Vertical => {
-                    for step in 1..=vy {
-                        let target_y = vy - step;
-                        if is_cell_free(vx, target_y) {
-                            let mut next = current.0.clone();
-                            next[idx] = (vx, target_y);
-                            valid_moves.push(BoardState(next));
-                        } else {
-                            break;
-                        }
-                    }
-                    for step in 1..=(height - (vy + vlen)) {
-                        let target_y = vy + step;
-                        let front_y = vy + vlen - 1 + step;
-                        if is_cell_free(vx, front_y) {
-                            let mut next = current.0.clone();
-                            next[idx] = (vx, target_y);
-                            valid_moves.push(BoardState(next));
-                        } else {
-                            break;
-                        }
-                    }
+                let mut next = current.0.clone();
+                next[idx] = match orient {
+                    Orientation::Horizontal => (target, vy),
+                    Orientation::Vertical => (vx, target),
+                };
+                valid_moves.push(BoardState(next));
+            }
+
+            // Positive direction (forwards)
+            for step in 1..=(max_dim - (pos + vlen)) {
+                let target = pos + step;
+                let front = pos + vlen - 1 + step;
+                let free = match orient {
+                    Orientation::Horizontal => is_cell_free(front, vy),
+                    Orientation::Vertical => is_cell_free(vx, front),
+                };
+                if !free {
+                    break;
                 }
+                let mut next = current.0.clone();
+                next[idx] = match orient {
+                    Orientation::Horizontal => (target, vy),
+                    Orientation::Vertical => (vx, target),
+                };
+                valid_moves.push(BoardState(next));
             }
 
             valid_moves
@@ -151,6 +121,7 @@ fn generate_next_states(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::board::ExitSide;
     use crate::game::vehicle::VehicleKind;
 
     #[test]

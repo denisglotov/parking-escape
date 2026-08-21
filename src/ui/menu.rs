@@ -71,15 +71,17 @@ pub fn render_main_menu(
     let btn_border = metrics.s(2.0).max(1.5);
     let spacing = metrics.s(16.0);
 
+    let btn_style = |bg_color| ButtonStyle {
+        bg_color,
+        font_size: btn_font_size,
+        border_width: btn_border,
+        ..Default::default()
+    };
+
     if draw_ui_button(
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         "PLAY GAME",
-        ButtonStyle {
-            bg_color: THEME.accent_green,
-            font_size: btn_font_size,
-            border_width: btn_border,
-            ..Default::default()
-        },
+        btn_style(THEME.accent_green),
         mouse_pos,
         is_mouse_down,
     ) {
@@ -90,12 +92,7 @@ pub fn render_main_menu(
     if draw_ui_button(
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         "LEVEL SELECT",
-        ButtonStyle {
-            bg_color: THEME.card_bg,
-            font_size: btn_font_size,
-            border_width: btn_border,
-            ..Default::default()
-        },
+        btn_style(THEME.card_bg),
         mouse_pos,
         is_mouse_down,
     ) {
@@ -111,12 +108,7 @@ pub fn render_main_menu(
     if draw_ui_button(
         Rect::new(btn_x, btn_y, btn_w, btn_h),
         sound_label,
-        ButtonStyle {
-            bg_color: THEME.surface,
-            font_size: btn_font_size,
-            border_width: btn_border,
-            ..Default::default()
-        },
+        btn_style(THEME.surface),
         mouse_pos,
         is_mouse_down,
     ) {

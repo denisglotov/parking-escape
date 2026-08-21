@@ -252,117 +252,67 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
     let sh = layout.screen_height;
     let curb_thick = (cs * 0.14).max(6.0);
 
-    match board.exit.side {
+    let (rx, ry, rw, rh, is_horizontal, dash_start, dash_end) = match board.exit.side {
         ExitSide::Right => {
             let row_y = oy + board.exit.row as f32 * cs;
             let rx = ox + bw;
-            let rw = (sw - rx).max(0.0);
-            let rh = cs;
-
-            // Road surface
-            if let Some(asphalt_tex) = textures.get("asphalt") {
-                draw_texture_ex(
-                    asphalt_tex,
-                    rx,
-                    row_y,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(rx, row_y, rw, rh, ROAD_ASPHALT);
-            }
-
-            // Top and bottom road curbs
-            draw_rectangle(rx, row_y - curb_thick, rw, curb_thick, ROAD_CURB);
-            draw_rectangle(rx, row_y + rh, rw, curb_thick, ROAD_CURB);
-
-            // Center road dashed line
-            let mid_y = row_y + rh / 2.0;
-            draw_dashed_line_h(rx + 6.0, sw - 6.0, mid_y, 2.5, 12.0, 8.0, ROAD_MARKING);
+            (rx, row_y, (sw - rx).max(0.0), cs, true, rx + 6.0, sw - 6.0)
         }
         ExitSide::Left => {
             let row_y = oy + board.exit.row as f32 * cs;
-            let rw = ox;
-            let rh = cs;
-
-            if let Some(asphalt_tex) = textures.get("asphalt") {
-                draw_texture_ex(
-                    asphalt_tex,
-                    0.0,
-                    row_y,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(0.0, row_y, rw, rh, ROAD_ASPHALT);
-            }
-
-            draw_rectangle(0.0, row_y - curb_thick, rw, curb_thick, ROAD_CURB);
-            draw_rectangle(0.0, row_y + rh, rw, curb_thick, ROAD_CURB);
-
-            let mid_y = row_y + rh / 2.0;
-            draw_dashed_line_h(6.0, rw - 6.0, mid_y, 2.5, 12.0, 8.0, ROAD_MARKING);
+            (0.0, row_y, ox, cs, true, 6.0, ox - 6.0)
         }
         ExitSide::Bottom => {
             let col_x = ox + board.exit.col as f32 * cs;
             let ry = oy + bh;
-            let rh = (sh - ry).max(0.0);
-            let rw = cs;
-
-            if let Some(asphalt_tex) = textures.get("asphalt") {
-                draw_texture_ex(
-                    asphalt_tex,
-                    col_x,
-                    ry,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(col_x, ry, rw, rh, ROAD_ASPHALT);
-            }
-
-            draw_rectangle(col_x - curb_thick, ry, curb_thick, rh, ROAD_CURB);
-            draw_rectangle(col_x + rw, ry, curb_thick, rh, ROAD_CURB);
-
-            let mid_x = col_x + rw / 2.0;
-            draw_dashed_line_v(mid_x, ry + 6.0, sh - 6.0, 2.5, 12.0, 8.0, ROAD_MARKING);
+            (col_x, ry, cs, (sh - ry).max(0.0), false, ry + 6.0, sh - 6.0)
         }
         ExitSide::Top => {
             let col_x = ox + board.exit.col as f32 * cs;
             let ry = layout.hud_height;
-            let rh = (oy - ry).max(0.0);
-            let rw = cs;
-
-            if let Some(asphalt_tex) = textures.get("asphalt") {
-                draw_texture_ex(
-                    asphalt_tex,
-                    col_x,
-                    ry,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(col_x, ry, rw, rh, ROAD_ASPHALT);
-            }
-
-            draw_rectangle(col_x - curb_thick, ry, curb_thick, rh, ROAD_CURB);
-            draw_rectangle(col_x + rw, ry, curb_thick, rh, ROAD_CURB);
-
-            let mid_x = col_x + rw / 2.0;
-            draw_dashed_line_v(mid_x, ry + 6.0, oy - 6.0, 2.5, 12.0, 8.0, ROAD_MARKING);
+            (col_x, ry, cs, (oy - ry).max(0.0), false, ry + 6.0, oy - 6.0)
         }
+    };
+
+    if let Some(asphalt_tex) = textures.get("asphalt") {
+        draw_texture_ex(
+            asphalt_tex,
+            rx,
+            ry,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(rw, rh)),
+                ..Default::default()
+            },
+        );
+    } else {
+        draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
+    }
+
+    if is_horizontal {
+        draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
+        draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
+        draw_dashed_line_h(
+            dash_start,
+            dash_end,
+            ry + rh / 2.0,
+            2.5,
+            12.0,
+            8.0,
+            ROAD_MARKING,
+        );
+    } else {
+        draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
+        draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
+        draw_dashed_line_v(
+            rx + rw / 2.0,
+            dash_start,
+            dash_end,
+            2.5,
+            12.0,
+            8.0,
+            ROAD_MARKING,
+        );
     }
 }
 
@@ -637,11 +587,9 @@ fn render_flora(board: &Board, layout: &BoardLayout) {
 
     // Bottom area trees
     let bot_space = sh - (oy + bh);
-    if bot_space >= 80.0 {
-        if board.exit.side != ExitSide::Bottom {
-            let bot_tree_y = oy + bh + bot_space * 0.70;
-            draw_lush_tree(sw * 0.88, bot_tree_y, 24.0);
-        }
+    if bot_space >= 80.0 && board.exit.side != ExitSide::Bottom {
+        let bot_tree_y = oy + bh + bot_space * 0.70;
+        draw_lush_tree(sw * 0.88, bot_tree_y, 24.0);
     }
 
     // Shrub hedges along parking lot curbs
@@ -754,36 +702,20 @@ fn draw_flower_patch(cx: f32, cy: f32, c1: Color, c2: Color) {
 /// Renders warm golden light illumination circles cast on the ground from lampposts.
 fn render_lamppost_glows(lampposts: &[LamppostPos], layout: &BoardLayout, time: f32) {
     let cs = layout.cell_size;
+    const GLOW_TIERS: [(f32, f32, f32, f32, f32); 4] = [
+        (1.10, 1.0, 0.82, 0.35, 0.05),
+        (0.75, 1.0, 0.84, 0.40, 0.10),
+        (0.48, 1.0, 0.88, 0.48, 0.18),
+        (0.24, 1.0, 0.94, 0.65, 0.32),
+    ];
 
     for (idx, lamp) in lampposts.iter().enumerate() {
         let pulse = ((time * 2.8) + idx as f32 * 1.6).sin() * 0.06 + 0.94;
         let base_r = (cs * 0.95).clamp(38.0, 95.0) * pulse;
 
-        // Multi-tier radial soft amber glow
-        draw_circle(
-            lamp.x,
-            lamp.y,
-            base_r * 1.10,
-            Color::new(1.0, 0.82, 0.35, 0.05),
-        );
-        draw_circle(
-            lamp.x,
-            lamp.y,
-            base_r * 0.75,
-            Color::new(1.0, 0.84, 0.40, 0.10),
-        );
-        draw_circle(
-            lamp.x,
-            lamp.y,
-            base_r * 0.48,
-            Color::new(1.0, 0.88, 0.48, 0.18),
-        );
-        draw_circle(
-            lamp.x,
-            lamp.y,
-            base_r * 0.24,
-            Color::new(1.0, 0.94, 0.65, 0.32),
-        );
+        for (r_mult, r, g, b, a) in GLOW_TIERS {
+            draw_circle(lamp.x, lamp.y, base_r * r_mult, Color::new(r, g, b, a));
+        }
     }
 }
 
