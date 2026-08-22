@@ -1,4 +1,5 @@
 use super::board::{Board, ExitPosition};
+use super::theme::Theme;
 use super::vehicle::Vehicle;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +29,7 @@ const fn default_par() -> u32 {
 impl LevelData {
     pub fn to_board(&self) -> Board {
         let mut board = Board::new(self.width, self.height, self.exit, self.vehicles.clone());
-        board.is_marine = self.id.is_multiple_of(2);
+        board.theme = Theme::for_level(self.id);
         board
     }
 

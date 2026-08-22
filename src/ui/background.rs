@@ -1,5 +1,6 @@
 use super::{BoardLayout, TextureStore};
 use crate::game::board::{Board, ExitSide};
+use crate::game::Theme;
 use macroquad::prelude::*;
 
 const ROAD_ASPHALT: Color = Color::new(0.16, 0.18, 0.22, 1.0);
@@ -13,11 +14,7 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
     let start_y = layout.hud_height;
     let area_h = (sh - start_y).max(0.0);
 
-    let bg_tex_key = if board.is_marine {
-        "marine_background"
-    } else {
-        "park_background"
-    };
+    let bg_tex_key = board.theme.background_texture_key();
 
     // 1. Draw background texture (or fallback solid fill)
     if let Some(bg_tex) = textures.get(bg_tex_key) {
@@ -32,10 +29,9 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
             },
         );
     } else {
-        let fallback_color = if board.is_marine {
-            Color::new(0.12, 0.38, 0.58, 1.0)
-        } else {
-            Color::new(0.12, 0.22, 0.14, 1.0)
+        let fallback_color = match board.theme {
+            Theme::Marine => Color::new(0.12, 0.38, 0.58, 1.0),
+            Theme::City => Color::new(0.12, 0.22, 0.14, 1.0),
         };
         draw_rectangle(0.0, start_y, sw, area_h, fallback_color);
     }
@@ -77,91 +73,94 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         }
     };
 
-    if board.is_marine {
-        // Draw water channel
-        if let Some(water_tex) = textures.get("marine_water") {
-            draw_texture_ex(
-                water_tex,
-                rx,
-                ry,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(rw, rh)),
-                    ..Default::default()
-                },
-            );
-        } else {
-            draw_rectangle(rx, ry, rw, rh, Color::new(0.15, 0.46, 0.70, 1.0));
-        }
+    match board.theme {
+        Theme::Marine => {
+            // Draw water channel
+            if let Some(water_tex) = textures.get(board.theme.ground_texture_key()) {
+                draw_texture_ex(
+                    water_tex,
+                    rx,
+                    ry,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(rw, rh)),
+                        ..Default::default()
+                    },
+                );
+            } else {
+                draw_rectangle(rx, ry, rw, rh, Color::new(0.15, 0.46, 0.70, 1.0));
+            }
 
-        // Wooden pier borders
-        let pier_wood = Color::new(0.42, 0.28, 0.18, 1.0);
-        let channel_buoy_light = Color::new(0.2, 0.85, 0.6, 0.8);
-        if is_horizontal {
-            draw_rectangle(rx, ry - curb_thick, rw, curb_thick, pier_wood);
-            draw_rectangle(rx, ry + rh, rw, curb_thick, pier_wood);
-            draw_dashed_line_h(
-                dash_start,
-                dash_end,
-                ry + rh / 2.0,
-                2.5,
-                16.0,
-                12.0,
-                channel_buoy_light,
-            );
-        } else {
-            draw_rectangle(rx - curb_thick, ry, curb_thick, rh, pier_wood);
-            draw_rectangle(rx + rw, ry, curb_thick, rh, pier_wood);
-            draw_dashed_line_v(
-                rx + rw / 2.0,
-                dash_start,
-                dash_end,
-                2.5,
-                16.0,
-                12.0,
-                channel_buoy_light,
-            );
+            // Wooden pier borders
+            let pier_wood = Color::new(0.42, 0.28, 0.18, 1.0);
+            let channel_buoy_light = Color::new(0.2, 0.85, 0.6, 0.8);
+            if is_horizontal {
+                draw_rectangle(rx, ry - curb_thick, rw, curb_thick, pier_wood);
+                draw_rectangle(rx, ry + rh, rw, curb_thick, pier_wood);
+                draw_dashed_line_h(
+                    dash_start,
+                    dash_end,
+                    ry + rh / 2.0,
+                    2.5,
+                    16.0,
+                    12.0,
+                    channel_buoy_light,
+                );
+            } else {
+                draw_rectangle(rx - curb_thick, ry, curb_thick, rh, pier_wood);
+                draw_rectangle(rx + rw, ry, curb_thick, rh, pier_wood);
+                draw_dashed_line_v(
+                    rx + rw / 2.0,
+                    dash_start,
+                    dash_end,
+                    2.5,
+                    16.0,
+                    12.0,
+                    channel_buoy_light,
+                );
+            }
         }
-    } else {
-        if let Some(asphalt_tex) = textures.get("asphalt") {
-            draw_texture_ex(
-                asphalt_tex,
-                rx,
-                ry,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(rw, rh)),
-                    ..Default::default()
-                },
-            );
-        } else {
-            draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
-        }
+        Theme::City => {
+            if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
+                draw_texture_ex(
+                    ground_tex,
+                    rx,
+                    ry,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(rw, rh)),
+                        ..Default::default()
+                    },
+                );
+            } else {
+                draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
+            }
 
-        if is_horizontal {
-            draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
-            draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
-            draw_dashed_line_h(
-                dash_start,
-                dash_end,
-                ry + rh / 2.0,
-                2.5,
-                12.0,
-                8.0,
-                ROAD_MARKING,
-            );
-        } else {
-            draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
-            draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
-            draw_dashed_line_v(
-                rx + rw / 2.0,
-                dash_start,
-                dash_end,
-                2.5,
-                12.0,
-                8.0,
-                ROAD_MARKING,
-            );
+            if is_horizontal {
+                draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
+                draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
+                draw_dashed_line_h(
+                    dash_start,
+                    dash_end,
+                    ry + rh / 2.0,
+                    2.5,
+                    12.0,
+                    8.0,
+                    ROAD_MARKING,
+                );
+            } else {
+                draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
+                draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
+                draw_dashed_line_v(
+                    rx + rw / 2.0,
+                    dash_start,
+                    dash_end,
+                    2.5,
+                    12.0,
+                    8.0,
+                    ROAD_MARKING,
+                );
+            }
         }
     }
 }

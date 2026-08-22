@@ -1,3 +1,4 @@
+use super::theme::Theme;
 use super::vehicle::{Orientation, Vehicle};
 use crate::audio::SoundTrigger;
 use serde::{Deserialize, Serialize};
@@ -107,7 +108,7 @@ pub struct Board {
     #[serde(skip)]
     pub is_won: bool,
     #[serde(skip)]
-    pub is_marine: bool,
+    pub theme: Theme,
     #[serde(skip)]
     pub exit_animation_progress: f32,
     #[serde(skip)]
@@ -127,7 +128,7 @@ impl Board {
             active_drag: None,
             active_coast: None,
             is_won: false,
-            is_marine: false,
+            theme: Theme::default(),
             exit_animation_progress: 0.0,
             initial_vehicles,
         }
@@ -313,11 +314,7 @@ impl Board {
             let clamped_target = raw_delta.clamp(min_bound, max_bound);
 
             // Inertia drag tracking: ships in water have higher hydrodynamic inertia and smooth momentum lag
-            let responsiveness = if self.is_marine {
-                13.0 / mass
-            } else {
-                28.0 / mass
-            };
+            let responsiveness = self.theme.drag_responsiveness(mass);
             let blend = (1.0 - (-responsiveness * dt).exp()).clamp(0.0, 1.0);
             let current_offset = self.vehicles[v_idx].drag_offset;
             self.vehicles[v_idx].drag_offset =
@@ -364,7 +361,7 @@ impl Board {
         let v_idx = drag.vehicle_index;
         let mass = self.vehicles[v_idx].mass();
 
-        let swipe_launch_threshold = if self.is_marine { 0.60 } else { 1.2 };
+        let swipe_launch_threshold = self.theme.swipe_launch_threshold();
         if drag.velocity.abs() > swipe_launch_threshold {
             // Launch inertial coasting!
             self.active_coast = Some(InertiaCoastState {
@@ -456,11 +453,7 @@ impl Board {
             let v_idx = coast.vehicle_index;
             let mass = self.vehicles[v_idx].mass();
             // Higher mass = lower friction deceleration = longer, heavier glide
-            let friction = if self.is_marine {
-                5.2 / mass
-            } else {
-                13.0 / mass
-            };
+            let friction = self.theme.friction(mass);
             coast.velocity -= coast.velocity * (friction * dt).min(0.95);
 
             let v = &mut self.vehicles[v_idx];
@@ -492,7 +485,7 @@ impl Board {
                     v.drag_offset = target_snap;
                     finished_coast = true;
                 } else {
-                    let snap_speed = if self.is_marine { 11.0 } else { 18.0 };
+                    let snap_speed = self.theme.snap_speed();
                     v.drag_offset += snap_diff * (snap_speed * dt).min(0.9);
                 }
             }
@@ -758,32 +751,35 @@ mod tests {
 
         // Create standard city board vs marine board
         let mut city_board = Board::new(6, 6, exit, vec![ship.clone()]);
-        city_board.is_marine = false;
+        city_board.theme = Theme::City;
 
         let mut marine_board = Board::new(6, 6, exit, vec![ship.clone()]);
-        marine_board.is_marine = true;
+        marine_board.theme = Theme::Marine;
 
         // Verify marine sprite lookup
         assert_eq!(
-            ship.kind.sprite_for_theme(Orientation::Horizontal, false),
+            ship.kind
+                .sprite_for_theme(Orientation::Horizontal, Theme::City),
             "player_red_h"
         );
         assert_eq!(
-            ship.kind.sprite_for_theme(Orientation::Horizontal, true),
+            ship.kind
+                .sprite_for_theme(Orientation::Horizontal, Theme::Marine),
             "ship_player_red_h"
         );
         assert_eq!(
-            ship.kind.sprite_for_theme(Orientation::Vertical, true),
+            ship.kind
+                .sprite_for_theme(Orientation::Vertical, Theme::Marine),
             "ship_player_red_v"
         );
 
         // Verify emergency ships in marine theme
         assert_eq!(
-            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, true),
+            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, Theme::Marine),
             "ship_patrol_h"
         );
         assert_eq!(
-            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, true),
+            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, Theme::Marine),
             "ship_sar_rescue_h"
         );
 

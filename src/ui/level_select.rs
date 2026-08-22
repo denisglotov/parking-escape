@@ -1,4 +1,4 @@
-use super::{draw_ui_button, ButtonStyle, GameTheme, TextureStore, UiMetrics, THEME};
+use super::{draw_ui_button, ButtonStyle, TextureStore, Theme, UiMetrics, THEME};
 use crate::game::level::{LevelRecord, LevelRepository, PackType};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -203,14 +203,17 @@ pub fn render_level_select(
         let card_border = (2.0 * metrics.scale).max(1.5);
         draw_rectangle_lines(cx, cy, card_w, card_h, card_border, border_col);
 
-        let is_marine = GameTheme::for_level(lvl.id).is_marine();
-        if is_marine {
-            draw_circle(
-                cx + card_w - metrics.s(10.0),
-                cy + metrics.s(10.0),
-                metrics.s(3.5),
-                Color::new(0.2, 0.85, 1.0, 0.85),
-            );
+        let theme = Theme::for_level(lvl.id);
+        match theme {
+            Theme::Marine => {
+                draw_circle(
+                    cx + card_w - metrics.s(10.0),
+                    cy + metrics.s(10.0),
+                    metrics.s(3.5),
+                    Color::new(0.2, 0.85, 1.0, 0.85),
+                );
+            }
+            Theme::City => {}
         }
 
         // Level Number (Prominent & Clear)

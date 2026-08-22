@@ -1,3 +1,4 @@
+use super::theme::Theme;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -39,7 +40,7 @@ impl VehicleKind {
         matches!(self, Self::CarPolice | Self::Ambulance)
     }
 
-    pub const fn sprite_name(&self, orientation: Orientation) -> &'static str {
+    pub const fn city_sprite_name(&self, orientation: Orientation) -> &'static str {
         match (self, orientation) {
             (Self::PlayerRed, Orientation::Horizontal) => "player_red_h",
             (Self::PlayerRed, Orientation::Vertical) => "player_red_v",
@@ -113,15 +114,10 @@ impl VehicleKind {
         }
     }
 
-    pub const fn sprite_for_theme(
-        &self,
-        orientation: Orientation,
-        is_marine: bool,
-    ) -> &'static str {
-        if is_marine {
-            self.marine_sprite_name(orientation)
-        } else {
-            self.sprite_name(orientation)
+    pub const fn sprite_for_theme(&self, orientation: Orientation, theme: Theme) -> &'static str {
+        match theme {
+            Theme::City => self.city_sprite_name(orientation),
+            Theme::Marine => self.marine_sprite_name(orientation),
         }
     }
 }

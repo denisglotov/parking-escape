@@ -8,6 +8,8 @@ pub mod win_modal;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
+pub use crate::game::Theme;
+
 pub struct UITheme {
     pub bg_dark: Color,
     pub surface: Color,
@@ -18,27 +20,6 @@ pub struct UITheme {
     pub accent_green: Color,
     pub text_primary: Color,
     pub text_secondary: Color,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum GameTheme {
-    #[default]
-    City,
-    Marine,
-}
-
-impl GameTheme {
-    pub const fn for_level(level_id: u32) -> Self {
-        if level_id.is_multiple_of(2) {
-            Self::Marine
-        } else {
-            Self::City
-        }
-    }
-
-    pub const fn is_marine(&self) -> bool {
-        matches!(self, Self::Marine)
-    }
 }
 
 pub const THEME: UITheme = UITheme {
@@ -159,24 +140,36 @@ impl TextureStore {
             };
         }
 
-        // Environment textures
+        // City Environment textures
         load_tex!(
-            "park_background",
-            "../../assets/environment/park_background.png"
+            "city_background",
+            "../../assets/themes/city/environment/background.png"
         );
-        load_tex!("asphalt", "../../assets/environment/asphalt.png");
-        load_tex!("stall_marker", "../../assets/environment/stall_marker.png");
-        load_tex!("exit_gate", "../../assets/environment/exit_gate.png");
+        load_tex!(
+            "city_ground",
+            "../../assets/themes/city/environment/ground.png"
+        );
+        load_tex!(
+            "stall_marker",
+            "../../assets/themes/city/environment/stall_marker.png"
+        );
+        load_tex!(
+            "city_exit_gate",
+            "../../assets/themes/city/environment/exit_gate.png"
+        );
 
         // Marine Environment textures
         load_tex!(
             "marine_background",
-            "../../assets/environment/marine_background.png"
+            "../../assets/themes/marine/environment/background.png"
         );
-        load_tex!("marine_water", "../../assets/environment/marine_water.png");
+        load_tex!(
+            "marine_ground",
+            "../../assets/themes/marine/environment/ground.png"
+        );
         load_tex!(
             "marine_exit_gate",
-            "../../assets/environment/marine_exit_gate.png"
+            "../../assets/themes/marine/environment/exit_gate.png"
         );
 
         // UI icon assets
@@ -189,79 +182,91 @@ impl TextureStore {
         load_tex!("icon_sound_on", "../../assets/ui/icon_sound_on.png");
         load_tex!("icon_sound_off", "../../assets/ui/icon_sound_off.png");
 
-        // Vehicle textures (both H and V)
-        macro_rules! load_veh {
+        // City Vehicle textures (both H and V)
+        macro_rules! load_city_veh {
             ($key:expr, $file:expr) => {
                 textures.insert(
                     $key.to_string(),
                     Texture2D::from_file_with_format(
-                        include_bytes!(concat!("../../assets/vehicles/", $file)),
+                        include_bytes!(concat!("../../assets/themes/city/vehicles/", $file)),
                         Some(ImageFormat::Png),
                     ),
                 );
             };
         }
 
-        load_veh!("player_red_h", "player_red_h.png");
-        load_veh!("player_red_v", "player_red_v.png");
+        load_city_veh!("player_red_h", "player_red_h.png");
+        load_city_veh!("player_red_v", "player_red_v.png");
 
-        load_veh!("car_sedan_blue_h", "car_sedan_blue_h.png");
-        load_veh!("car_sedan_blue_v", "car_sedan_blue_v.png");
+        load_city_veh!("car_sedan_blue_h", "car_sedan_blue_h.png");
+        load_city_veh!("car_sedan_blue_v", "car_sedan_blue_v.png");
 
-        load_veh!("car_taxi_yellow_h", "car_taxi_yellow_h.png");
-        load_veh!("car_taxi_yellow_v", "car_taxi_yellow_v.png");
+        load_city_veh!("car_taxi_yellow_h", "car_taxi_yellow_h.png");
+        load_city_veh!("car_taxi_yellow_v", "car_taxi_yellow_v.png");
 
-        load_veh!("car_hatchback_green_h", "car_hatchback_green_h.png");
-        load_veh!("car_hatchback_green_v", "car_hatchback_green_v.png");
+        load_city_veh!("car_hatchback_green_h", "car_hatchback_green_h.png");
+        load_city_veh!("car_hatchback_green_v", "car_hatchback_green_v.png");
 
-        load_veh!("car_police_h", "car_police_h.png");
-        load_veh!("car_police_v", "car_police_v.png");
+        load_city_veh!("car_police_h", "car_police_h.png");
+        load_city_veh!("car_police_v", "car_police_v.png");
 
-        load_veh!("truck_delivery_h", "truck_delivery_h.png");
-        load_veh!("truck_delivery_v", "truck_delivery_v.png");
+        load_city_veh!("truck_delivery_h", "truck_delivery_h.png");
+        load_city_veh!("truck_delivery_v", "truck_delivery_v.png");
 
-        load_veh!("limo_white_h", "limo_white_h.png");
-        load_veh!("limo_white_v", "limo_white_v.png");
+        load_city_veh!("limo_white_h", "limo_white_h.png");
+        load_city_veh!("limo_white_v", "limo_white_v.png");
 
-        load_veh!("ambulance_h", "ambulance_h.png");
-        load_veh!("ambulance_v", "ambulance_v.png");
+        load_city_veh!("ambulance_h", "ambulance_h.png");
+        load_city_veh!("ambulance_v", "ambulance_v.png");
 
-        load_veh!("semi_truck_h", "semi_truck_h.png");
-        load_veh!("semi_truck_v", "semi_truck_v.png");
+        load_city_veh!("semi_truck_h", "semi_truck_h.png");
+        load_city_veh!("semi_truck_v", "semi_truck_v.png");
 
-        load_veh!("bus_transit_h", "bus_transit_h.png");
-        load_veh!("bus_transit_v", "bus_transit_v.png");
+        load_city_veh!("bus_transit_h", "bus_transit_h.png");
+        load_city_veh!("bus_transit_v", "bus_transit_v.png");
 
-        // Marine ship textures (both H and V)
-        load_veh!("ship_player_red_h", "ship_player_red_h.png");
-        load_veh!("ship_player_red_v", "ship_player_red_v.png");
+        // Marine Ship textures (both H and V)
+        macro_rules! load_marine_veh {
+            ($key:expr, $file:expr) => {
+                textures.insert(
+                    $key.to_string(),
+                    Texture2D::from_file_with_format(
+                        include_bytes!(concat!("../../assets/themes/marine/vehicles/", $file)),
+                        Some(ImageFormat::Png),
+                    ),
+                );
+            };
+        }
 
-        load_veh!("ship_sail_blue_h", "ship_sail_blue_h.png");
-        load_veh!("ship_sail_blue_v", "ship_sail_blue_v.png");
+        load_marine_veh!("ship_player_red_h", "ship_player_red_h.png");
+        load_marine_veh!("ship_player_red_v", "ship_player_red_v.png");
 
-        load_veh!("ship_taxi_yellow_h", "ship_taxi_yellow_h.png");
-        load_veh!("ship_taxi_yellow_v", "ship_taxi_yellow_v.png");
+        load_marine_veh!("ship_sail_blue_h", "ship_sail_blue_h.png");
+        load_marine_veh!("ship_sail_blue_v", "ship_sail_blue_v.png");
 
-        load_veh!("ship_tug_green_h", "ship_tug_green_h.png");
-        load_veh!("ship_tug_green_v", "ship_tug_green_v.png");
+        load_marine_veh!("ship_taxi_yellow_h", "ship_taxi_yellow_h.png");
+        load_marine_veh!("ship_taxi_yellow_v", "ship_taxi_yellow_v.png");
 
-        load_veh!("ship_patrol_h", "ship_patrol_h.png");
-        load_veh!("ship_patrol_v", "ship_patrol_v.png");
+        load_marine_veh!("ship_tug_green_h", "ship_tug_green_h.png");
+        load_marine_veh!("ship_tug_green_v", "ship_tug_green_v.png");
 
-        load_veh!("ship_cargo_h", "ship_cargo_h.png");
-        load_veh!("ship_cargo_v", "ship_cargo_v.png");
+        load_marine_veh!("ship_patrol_h", "ship_patrol_h.png");
+        load_marine_veh!("ship_patrol_v", "ship_patrol_v.png");
 
-        load_veh!("ship_yacht_white_h", "ship_yacht_white_h.png");
-        load_veh!("ship_yacht_white_v", "ship_yacht_white_v.png");
+        load_marine_veh!("ship_cargo_h", "ship_cargo_h.png");
+        load_marine_veh!("ship_cargo_v", "ship_cargo_v.png");
 
-        load_veh!("ship_sar_rescue_h", "ship_sar_rescue_h.png");
-        load_veh!("ship_sar_rescue_v", "ship_sar_rescue_v.png");
+        load_marine_veh!("ship_yacht_white_h", "ship_yacht_white_h.png");
+        load_marine_veh!("ship_yacht_white_v", "ship_yacht_white_v.png");
 
-        load_veh!("ship_container_h", "ship_container_h.png");
-        load_veh!("ship_container_v", "ship_container_v.png");
+        load_marine_veh!("ship_sar_rescue_h", "ship_sar_rescue_h.png");
+        load_marine_veh!("ship_sar_rescue_v", "ship_sar_rescue_v.png");
 
-        load_veh!("ship_ferry_h", "ship_ferry_h.png");
-        load_veh!("ship_ferry_v", "ship_ferry_v.png");
+        load_marine_veh!("ship_container_h", "ship_container_h.png");
+        load_marine_veh!("ship_container_v", "ship_container_v.png");
+
+        load_marine_veh!("ship_ferry_h", "ship_ferry_h.png");
+        load_marine_veh!("ship_ferry_v", "ship_ferry_v.png");
 
         Self { textures, font }
     }
