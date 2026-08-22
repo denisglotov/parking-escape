@@ -6,8 +6,26 @@
 # WebAssembly build outputs
 parking-escape.wasm
 
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
 # Virtual environments & IDEs
 .venv/
+venv/
+env/
+ENV/
 .idea/
 .vscode/
 

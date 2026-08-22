@@ -24,7 +24,7 @@ pub fn solve(width: i32, height: i32, exit: ExitPosition, vehicles: &[Vehicle]) 
         let player = &vehicles[player_idx];
 
         if exit.is_reached(player.orientation, px, py, player.length, width, height) {
-            return Some(moves + 1);
+            return Some(moves);
         }
 
         for next_state in generate_next_states(width, height, &state, vehicles) {

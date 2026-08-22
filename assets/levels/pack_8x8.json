@@ -1,7 +1,7 @@
 [
   {
     "id": 1,
-    "name": "Avenue Jam",
+    "name": "8x8 Stage 1",
     "width": 8,
     "height": 8,
     "exit": {
@@ -12,42 +12,118 @@
       {
         "id": "player",
         "kind": "player_red",
-        "x": 1,
+        "x": 4,
         "y": 3,
         "length": 2,
         "orientation": "horizontal",
         "is_player": true
       },
       {
-        "id": "s1",
+        "id": "v1",
+        "kind": "truck_delivery",
+        "x": 6,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
         "kind": "semi_truck",
-        "x": 3,
+        "x": 7,
         "y": 0,
         "length": 4,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "b1",
-        "kind": "bus_transit",
+        "id": "v3",
+        "kind": "semi_truck",
         "x": 4,
+        "y": 4,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "truck_delivery",
+        "x": 1,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "bus_transit",
+        "x": 3,
+        "y": 4,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v6",
+        "kind": "bus_transit",
+        "x": 0,
+        "y": 1,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v7",
+        "kind": "ambulance",
+        "x": 3,
+        "y": 2,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 8
+  },
+  {
+    "id": 2,
+    "name": "8x8 Stage 2",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 0,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "semi_truck",
+        "x": 2,
         "y": 2,
         "length": 4,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "c1",
-        "kind": "car_taxi_yellow",
-        "x": 0,
-        "y": 1,
-        "length": 2,
+        "id": "v2",
+        "kind": "bus_transit",
+        "x": 5,
+        "y": 0,
+        "length": 4,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "c2",
-        "kind": "car_sedan_blue",
+        "id": "v3",
+        "kind": "car_hatchback_green",
         "x": 1,
         "y": 1,
         "length": 2,
@@ -55,56 +131,123 @@
         "is_player": false
       },
       {
-        "id": "t1",
+        "id": "v4",
+        "kind": "semi_truck",
+        "x": 4,
+        "y": 4,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "bus_transit",
+        "x": 2,
+        "y": 6,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v6",
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v7",
+        "kind": "ambulance",
+        "x": 2,
+        "y": 7,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 3,
+    "name": "8x8 Stage 3",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 2,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "bus_transit",
+        "x": 6,
+        "y": 0,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
+        "kind": "semi_truck",
+        "x": 4,
+        "y": 3,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
         "kind": "truck_delivery",
         "x": 5,
-        "y": 0,
-        "length": 3,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "c3",
-        "kind": "car_police",
-        "x": 0,
         "y": 4,
-        "length": 2,
-        "orientation": "vertical",
+        "length": 3,
+        "orientation": "horizontal",
         "is_player": false
       },
       {
-        "id": "t2",
+        "id": "v4",
+        "kind": "car_taxi_yellow",
+        "x": 4,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "semi_truck",
+        "x": 3,
+        "y": 7,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v6",
         "kind": "ambulance",
         "x": 1,
         "y": 5,
         "length": 3,
-        "orientation": "horizontal",
-        "is_player": false
-      },
-      {
-        "id": "c4",
-        "kind": "car_hatchback_green",
-        "x": 5,
-        "y": 4,
-        "length": 2,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "c5",
-        "kind": "car_sedan_blue",
-        "x": 6,
-        "y": 2,
-        "length": 2,
         "orientation": "vertical",
         "is_player": false
       }
     ],
-    "par_moves": 7
+    "par_moves": 8
   },
   {
-    "id": 2,
-    "name": "Heavy Haul",
+    "id": 4,
+    "name": "8x8 Stage 4",
     "width": 8,
     "height": 8,
     "exit": {
@@ -122,7 +265,16 @@
         "is_player": true
       },
       {
-        "id": "s1",
+        "id": "v1",
+        "kind": "bus_transit",
+        "x": 7,
+        "y": 3,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
         "kind": "semi_truck",
         "x": 2,
         "y": 0,
@@ -131,163 +283,458 @@
         "is_player": false
       },
       {
-        "id": "b1",
-        "kind": "bus_transit",
+        "id": "v3",
+        "kind": "semi_truck",
         "x": 4,
+        "y": 7,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "ambulance",
+        "x": 0,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "car_hatchback_green",
+        "x": 1,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v6",
+        "kind": "semi_truck",
+        "x": 1,
+        "y": 5,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v7",
+        "kind": "car_police",
+        "x": 1,
+        "y": 7,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v8",
+        "kind": "truck_delivery",
+        "x": 2,
+        "y": 6,
+        "length": 3,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 8
+  },
+  {
+    "id": 5,
+    "name": "8x8 Stage 5",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 1,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "bus_transit",
+        "x": 5,
         "y": 0,
         "length": 4,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "t1",
-        "kind": "limo_white",
+        "id": "v2",
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
+        "kind": "bus_transit",
         "x": 0,
         "y": 1,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "truck_delivery",
+        "x": 1,
+        "y": 4,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "bus_transit",
+        "x": 4,
+        "y": 6,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 8
+  },
+  {
+    "id": 6,
+    "name": "8x8 Stage 6",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 2,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "truck_delivery",
+        "x": 4,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
+        "kind": "semi_truck",
+        "x": 7,
+        "y": 0,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
+        "kind": "car_taxi_yellow",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "semi_truck",
+        "x": 4,
+        "y": 4,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "semi_truck",
+        "x": 3,
+        "y": 4,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v6",
+        "kind": "car_hatchback_green",
+        "x": 6,
+        "y": 7,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v7",
+        "kind": "bus_transit",
+        "x": 0,
+        "y": 4,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      }
+    ],
+    "par_moves": 8
+  },
+  {
+    "id": 7,
+    "name": "8x8 Stage 7",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 0,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "bus_transit",
+        "x": 2,
+        "y": 2,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
+        "kind": "bus_transit",
+        "x": 7,
+        "y": 0,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
+        "kind": "bus_transit",
+        "x": 0,
+        "y": 6,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "limo_white",
+        "x": 5,
+        "y": 4,
         "length": 3,
         "orientation": "horizontal",
         "is_player": false
       },
       {
-        "id": "c1",
-        "kind": "car_sedan_blue",
-        "x": 0,
+        "id": "v5",
+        "kind": "car_hatchback_green",
+        "x": 1,
         "y": 4,
         "length": 2,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "c2",
+        "id": "v6",
+        "kind": "bus_transit",
+        "x": 2,
+        "y": 0,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v7",
         "kind": "car_police",
-        "x": 1,
-        "y": 5,
+        "x": 3,
+        "y": 4,
         "length": 2,
         "orientation": "horizontal",
         "is_player": false
       },
       {
-        "id": "t2",
+        "id": "v8",
+        "kind": "semi_truck",
+        "x": 4,
+        "y": 5,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      }
+    ],
+    "par_moves": 10
+  },
+  {
+    "id": 8,
+    "name": "8x8 Stage 8",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 3,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
+        "kind": "bus_transit",
+        "x": 6,
+        "y": 2,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
+        "kind": "bus_transit",
+        "x": 5,
+        "y": 0,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
+        "kind": "car_police",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "limo_white",
+        "x": 2,
+        "y": 4,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "bus_transit",
+        "x": 3,
+        "y": 4,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      }
+    ],
+    "par_moves": 8
+  },
+  {
+    "id": 9,
+    "name": "8x8 Stage 9",
+    "width": 8,
+    "height": 8,
+    "exit": {
+      "side": "right",
+      "row": 3
+    },
+    "vehicles": [
+      {
+        "id": "player",
+        "kind": "player_red",
+        "x": 4,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "id": "v1",
         "kind": "truck_delivery",
+        "x": 7,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v2",
+        "kind": "bus_transit",
+        "x": 6,
+        "y": 1,
+        "length": 4,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v3",
+        "kind": "bus_transit",
+        "x": 4,
+        "y": 5,
+        "length": 4,
+        "orientation": "horizontal",
+        "is_player": false
+      },
+      {
+        "id": "v4",
+        "kind": "ambulance",
         "x": 3,
         "y": 5,
         "length": 3,
+        "orientation": "vertical",
+        "is_player": false
+      },
+      {
+        "id": "v5",
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 1,
+        "length": 2,
         "orientation": "horizontal",
         "is_player": false
       },
       {
-        "id": "c3",
-        "kind": "car_taxi_yellow",
-        "x": 6,
-        "y": 2,
+        "id": "v6",
+        "kind": "car_sedan_blue",
+        "x": 5,
+        "y": 6,
         "length": 2,
         "orientation": "vertical",
         "is_player": false
       },
       {
-        "id": "c4",
-        "kind": "car_hatchback_green",
-        "x": 6,
-        "y": 5,
-        "length": 2,
-        "orientation": "vertical",
+        "id": "v7",
+        "kind": "semi_truck",
+        "x": 0,
+        "y": 4,
+        "length": 4,
+        "orientation": "horizontal",
         "is_player": false
       }
     ],
     "par_moves": 9
-  },
-  {
-    "id": 3,
-    "name": "Central Plaza",
-    "width": 8,
-    "height": 8,
-    "exit": {
-      "side": "right",
-      "row": 3
-    },
-    "vehicles": [
-      {
-        "id": "player",
-        "kind": "player_red",
-        "x": 2,
-        "y": 3,
-        "length": 2,
-        "orientation": "horizontal",
-        "is_player": true
-      },
-      {
-        "id": "b1",
-        "kind": "bus_transit",
-        "x": 4,
-        "y": 0,
-        "length": 4,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "t1",
-        "kind": "ambulance",
-        "x": 0,
-        "y": 2,
-        "length": 3,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "c1",
-        "kind": "car_sedan_blue",
-        "x": 1,
-        "y": 0,
-        "length": 2,
-        "orientation": "horizontal",
-        "is_player": false
-      },
-      {
-        "id": "c2",
-        "kind": "car_taxi_yellow",
-        "x": 2,
-        "y": 1,
-        "length": 2,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "c3",
-        "kind": "car_police",
-        "x": 0,
-        "y": 5,
-        "length": 2,
-        "orientation": "horizontal",
-        "is_player": false
-      },
-      {
-        "id": "t2",
-        "kind": "truck_delivery",
-        "x": 2,
-        "y": 5,
-        "length": 3,
-        "orientation": "horizontal",
-        "is_player": false
-      },
-      {
-        "id": "c4",
-        "kind": "car_hatchback_green",
-        "x": 6,
-        "y": 1,
-        "length": 2,
-        "orientation": "vertical",
-        "is_player": false
-      },
-      {
-        "id": "c5",
-        "kind": "car_sedan_blue",
-        "x": 6,
-        "y": 4,
-        "length": 2,
-        "orientation": "vertical",
-        "is_player": false
-      }
-    ],
-    "par_moves": 5
   }
 ]

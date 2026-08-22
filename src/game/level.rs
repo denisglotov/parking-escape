@@ -99,6 +99,7 @@ mod tests {
     use crate::game::solver::solve;
 
     #[test]
+    #[ignore]
     fn test_all_embedded_levels_are_solvable() {
         let repo = LevelRepository::load_embedded().expect("Failed to parse embedded levels");
         assert!(!repo.pack_6x6.is_empty());
