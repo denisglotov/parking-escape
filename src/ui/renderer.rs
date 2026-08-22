@@ -35,17 +35,17 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
                 },
             );
         } else {
-            draw_rectangle(ox, oy, bw, bh, Color::new(0.08, 0.26, 0.42, 1.0));
+            draw_rectangle(ox, oy, bw, bh, Color::new(0.15, 0.46, 0.70, 1.0));
         }
 
-        // Draw Subtle Deep Marina Water Grid Lines
+        // Draw Subtle Lighter Marine Water Grid Lines
         for gx in 0..=board.width {
             let x = ox + gx as f32 * cs;
-            draw_line(x, oy, x, oy + bh, 1.0, Color::new(0.35, 0.60, 0.85, 0.18));
+            draw_line(x, oy, x, oy + bh, 1.0, Color::new(0.50, 0.75, 1.0, 0.22));
         }
         for gy in 0..=board.height {
             let y = oy + gy as f32 * cs;
-            draw_line(ox, y, ox + bw, y, 1.0, Color::new(0.35, 0.60, 0.85, 0.18));
+            draw_line(ox, y, ox + bw, y, 1.0, Color::new(0.50, 0.75, 1.0, 0.22));
         }
 
         // Mooring dots at intersections
@@ -53,7 +53,7 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
             for gy in 1..board.height {
                 let mx = ox + gx as f32 * cs;
                 let my = oy + gy as f32 * cs;
-                draw_circle(mx, my, 2.0, Color::new(0.45, 0.70, 0.90, 0.30));
+                draw_circle(mx, my, 2.0, Color::new(0.65, 0.85, 1.0, 0.35));
             }
         }
     } else {

@@ -33,7 +33,7 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
         );
     } else {
         let fallback_color = if board.is_marine {
-            Color::new(0.06, 0.20, 0.34, 1.0)
+            Color::new(0.12, 0.38, 0.58, 1.0)
         } else {
             Color::new(0.12, 0.22, 0.14, 1.0)
         };
@@ -91,7 +91,7 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
                 },
             );
         } else {
-            draw_rectangle(rx, ry, rw, rh, Color::new(0.08, 0.26, 0.42, 1.0));
+            draw_rectangle(rx, ry, rw, rh, Color::new(0.15, 0.46, 0.70, 1.0));
         }
 
         // Wooden pier borders
