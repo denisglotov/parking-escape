@@ -35,22 +35,17 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
                 },
             );
         } else {
-            draw_rectangle(ox, oy, bw, bh, Color::new(0.05, 0.35, 0.55, 1.0));
+            draw_rectangle(ox, oy, bw, bh, Color::new(0.08, 0.26, 0.42, 1.0));
         }
 
-        // Subtle dynamic animated wave caustic shimmer
-        let time = get_time() as f32;
-        let wave_alpha = (time * 1.5).sin() * 0.04 + 0.06;
-        draw_rectangle(ox, oy, bw, bh, Color::new(0.3, 0.85, 1.0, wave_alpha));
-
-        // Draw Nautical Grid Mooring / Wave Lines
+        // Draw Subtle Deep Marina Water Grid Lines
         for gx in 0..=board.width {
             let x = ox + gx as f32 * cs;
-            draw_line(x, oy, x, oy + bh, 1.0, Color::new(0.4, 0.85, 1.0, 0.12));
+            draw_line(x, oy, x, oy + bh, 1.0, Color::new(0.35, 0.60, 0.85, 0.18));
         }
         for gy in 0..=board.height {
             let y = oy + gy as f32 * cs;
-            draw_line(ox, y, ox + bw, y, 1.0, Color::new(0.4, 0.85, 1.0, 0.12));
+            draw_line(ox, y, ox + bw, y, 1.0, Color::new(0.35, 0.60, 0.85, 0.18));
         }
 
         // Mooring dots at intersections
@@ -58,7 +53,7 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
             for gy in 1..board.height {
                 let mx = ox + gx as f32 * cs;
                 let my = oy + gy as f32 * cs;
-                draw_circle(mx, my, 2.5, Color::new(0.6, 0.9, 1.0, 0.25));
+                draw_circle(mx, my, 2.0, Color::new(0.45, 0.70, 0.90, 0.30));
             }
         }
     } else {
@@ -295,11 +290,15 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             py -= 2.0;
         }
 
-        // Draw Hydrodynamic Water Wake & Foam Trails for moving ships
+        // 1. Draw Under-Vehicle Effects (Hydrodynamic Wakes & Ground Reflection)
         if board.is_marine && is_moving {
             render_ship_wake(veh, Rect::new(px, py, pw, ph), cs);
         }
+        if let Some(bump) = &veh.bump_state {
+            render_ground_effects(board.is_marine, veh, bump, Rect::new(px, py, pw, ph), cs);
+        }
 
+        // 2. Draw Vehicle / Ship Body
         let sprite_name = veh.kind.sprite_for_theme(veh.orientation, board.is_marine);
         if let Some(tex) = textures.get(sprite_name) {
             draw_texture_ex(
@@ -324,6 +323,7 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             draw_rectangle_lines(px + 2.0, py + 2.0, pw - 4.0, ph - 4.0, 2.0, WHITE);
         }
 
+        // 3. Draw Drag Selection Highlight
         if is_being_dragged {
             let select_col = if board.is_marine {
                 Color::new(0.3, 0.95, 1.0, 0.85)
@@ -333,10 +333,38 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             draw_rectangle_lines(px + 1.0, py + 1.0, pw - 2.0, ph - 2.0, 2.0, select_col);
         }
 
-        // Render dynamic lighting, hazard flashing & emergency strobes
+        // 4. Draw Over-Vehicle Effects (Rooftop Strobes, Navigation Lights, Contact Sparks)
         if let Some(bump) = &veh.bump_state {
             render_vehicle_effects(board.is_marine, veh, bump, Rect::new(px, py, pw, ph), cs);
         }
+    }
+}
+
+/// Renders under-vehicle ground reflections beneath the vehicle.
+fn render_ground_effects(
+    is_marine: bool,
+    veh: &crate::game::vehicle::Vehicle,
+    bump: &crate::game::vehicle::BumpState,
+    bounds: Rect,
+    cs: f32,
+) {
+    if veh.kind.is_emergency() {
+        let phase = bump.emergency_strobe_phase();
+        let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
+        let center_x = bounds.x + bounds.w * 0.5;
+        let center_y = bounds.y + bounds.h * 0.5;
+        let reflection_col = if is_marine {
+            if phase < 0.5 {
+                Color::new(0.05, 0.75, 1.0, 0.20 * micro_pulse * bump.intensity)
+            } else {
+                Color::new(1.0, 0.25, 0.15, 0.20 * micro_pulse * bump.intensity)
+            }
+        } else if phase < 0.5 {
+            Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
+        } else {
+            Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
+        };
+        draw_circle(center_x, center_y, cs * 1.5, reflection_col);
     }
 }
 
@@ -465,26 +493,6 @@ fn render_vehicle_effects(
 
     let orient = veh.orientation;
     let is_emergency = veh.kind.is_emergency();
-
-    // 1. Ground pavement / Water lighting reflection for emergency vehicles
-    if is_emergency {
-        let phase = bump.emergency_strobe_phase();
-        let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
-        let center_x = px + pw * 0.5;
-        let center_y = py + ph * 0.5;
-        let reflection_col = if is_marine {
-            if phase < 0.5 {
-                Color::new(0.05, 0.75, 1.0, 0.25 * micro_pulse * bump.intensity)
-            } else {
-                Color::new(1.0, 0.25, 0.15, 0.25 * micro_pulse * bump.intensity)
-            }
-        } else if phase < 0.5 {
-            Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
-        } else {
-            Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
-        };
-        draw_circle(center_x, center_y, cs * 1.6, reflection_col);
-    }
 
     // 2. Headlights / Nautical Port & Starboard Navigation Lanterns
     if bump.is_hazard_on() {
