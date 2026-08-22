@@ -251,28 +251,32 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             }
         }
 
-        // Apply subtle squash & stretch on impact contact centered on vehicle
-        if let Some(bump) = &veh.bump_state {
-            let (scale_len, scale_wid) = bump.squash_factors();
-            let (scalex, scaley) = match veh.orientation {
-                crate::game::vehicle::Orientation::Horizontal => (scale_len, scale_wid),
-                crate::game::vehicle::Orientation::Vertical => (scale_wid, scale_len),
-            };
-            let orig_pw = pw;
-            let orig_ph = ph;
-            pw *= scalex;
-            ph *= scaley;
-            px += (orig_pw - pw) * 0.5;
-            py += (orig_ph - ph) * 0.5;
+        // Apply subtle squash & stretch on impact contact centered on vehicle (City theme only)
+        if board.theme == Theme::City {
+            if let Some(bump) = &veh.bump_state {
+                let (scale_len, scale_wid) = bump.squash_factors();
+                let (scalex, scaley) = match veh.orientation {
+                    crate::game::vehicle::Orientation::Horizontal => (scale_len, scale_wid),
+                    crate::game::vehicle::Orientation::Vertical => (scale_wid, scale_len),
+                };
+                let orig_pw = pw;
+                let orig_ph = ph;
+                pw *= scalex;
+                ph *= scaley;
+                px += (orig_pw - pw) * 0.5;
+                py += (orig_ph - ph) * 0.5;
+            }
         }
 
         if is_being_dragged {
             py -= 2.0;
         }
 
-        // Apply marine buoyancy idle heave and roll
+        // Apply marine buoyancy idle heave and roll, plus any impact drift rocking
         let (heave_x, heave_y, roll) = if board.theme == Theme::Marine {
-            compute_vessel_buoyancy(idx, px, py, cs, is_being_dragged)
+            let (hx, hy, base_roll) = compute_vessel_buoyancy(idx, px, py, cs, is_being_dragged);
+            let drift_roll = veh.drift_state.as_ref().map_or(0.0, |d| d.roll());
+            (hx, hy, base_roll + drift_roll)
         } else {
             (0.0, 0.0, 0.0)
         };

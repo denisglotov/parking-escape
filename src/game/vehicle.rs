@@ -134,10 +134,17 @@ pub struct BumpState {
     pub intensity: f32,
     /// Whether this vehicle is an emergency vehicle (police / ambulance).
     pub is_emergency: bool,
+    /// Whether physical spring recoil bounce is enabled (disabled in Marine theme).
+    pub enable_bounce: bool,
 }
 
 impl BumpState {
-    pub fn new(impact_direction: f32, velocity: f32, is_emergency: bool) -> Self {
+    pub fn new(
+        impact_direction: f32,
+        velocity: f32,
+        is_emergency: bool,
+        enable_bounce: bool,
+    ) -> Self {
         let intensity = (velocity.abs() / 9.0).clamp(0.6, 1.0);
         let total_duration = if is_emergency { 2.2 } else { 1.3 };
         Self {
@@ -146,12 +153,17 @@ impl BumpState {
             total_duration,
             intensity,
             is_emergency,
+            enable_bounce,
         }
     }
 
     /// Computes physical spring recoil bounce offset (in grid fraction units).
     /// Bounces opposite to the impact direction with a visible damped oscillation over ~0.35s.
+    /// Returns 0.0 if bounce is disabled (e.g. in Marine theme).
     pub fn bounce_offset(&self) -> f32 {
+        if !self.enable_bounce {
+            return 0.0;
+        }
         const DURATION: f32 = 0.35;
         if self.timer >= DURATION {
             return 0.0;
@@ -193,6 +205,64 @@ impl BumpState {
     }
 }
 
+/// Hydrodynamic water drift state when a floating vessel is struck by another vessel.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DriftState {
+    /// 2D direction of the drift push `(push_x, push_y)` in grid units.
+    pub push_dir: (f32, f32),
+    /// Elapsed time since impact (in seconds).
+    pub timer: f32,
+    /// Total duration of the water drift animation (in seconds).
+    pub total_duration: f32,
+    /// Impact intensity (clamped 0.35 to 1.0).
+    pub intensity: f32,
+}
+
+impl DriftState {
+    pub fn new(push_x: f32, push_y: f32, intensity: f32) -> Self {
+        Self {
+            push_dir: (push_x, push_y),
+            timer: 0.0,
+            total_duration: 0.7,
+            intensity: intensity.clamp(0.35, 1.0),
+        }
+    }
+
+    /// Computes current 2D visual drift displacement `(drift_x, drift_y)` in grid fraction units.
+    pub fn offset(&self) -> (f32, f32) {
+        if self.timer >= self.total_duration {
+            return (0.0, 0.0);
+        }
+        let t = (self.timer / self.total_duration).clamp(0.0, 1.0);
+        let envelope = (1.0 - t).powf(1.8);
+        let wave = (t * std::f32::consts::PI * 1.8).sin();
+        let amount = wave * envelope * 0.22 * self.intensity;
+        (self.push_dir.0 * amount, self.push_dir.1 * amount)
+    }
+
+    /// Computes subtle rotational rocking roll (in radians) induced by the impact drift.
+    pub fn roll(&self) -> f32 {
+        if self.timer >= self.total_duration {
+            return 0.0;
+        }
+        let t = (self.timer / self.total_duration).clamp(0.0, 1.0);
+        let envelope = (1.0 - t).powi(2);
+        let wave = (t * std::f32::consts::PI * 2.2).sin();
+        let dir = if self.push_dir.0 != 0.0 {
+            self.push_dir.0
+        } else {
+            self.push_dir.1
+        };
+        wave * envelope * 0.045 * self.intensity * dir
+    }
+
+    /// Advance timer by `dt`. Returns true if drift effect is still active.
+    pub fn update(&mut self, dt: f32) -> bool {
+        self.timer += dt;
+        self.timer < self.total_duration
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vehicle {
     pub id: String,
@@ -207,6 +277,8 @@ pub struct Vehicle {
     pub drag_offset: f32,
     #[serde(skip)]
     pub bump_state: Option<BumpState>,
+    #[serde(skip)]
+    pub drift_state: Option<DriftState>,
 }
 
 impl Vehicle {
@@ -230,6 +302,7 @@ impl Vehicle {
             is_player,
             drag_offset: 0.0,
             bump_state: None,
+            drift_state: None,
         }
     }
 
@@ -265,16 +338,17 @@ impl Vehicle {
         cell_size: f32,
     ) -> (f32, f32, f32, f32) {
         let bounce = self.bump_state.as_ref().map_or(0.0, |b| b.bounce_offset());
+        let (drift_x, drift_y) = self.drift_state.as_ref().map_or((0.0, 0.0), |d| d.offset());
         let total_offset = self.drag_offset + bounce;
 
         let (px, py) = match self.orientation {
             Orientation::Horizontal => (
-                origin_x + (self.x as f32 + total_offset) * cell_size,
-                origin_y + self.y as f32 * cell_size,
+                origin_x + (self.x as f32 + total_offset + drift_x) * cell_size,
+                origin_y + (self.y as f32 + drift_y) * cell_size,
             ),
             Orientation::Vertical => (
-                origin_x + self.x as f32 * cell_size,
-                origin_y + (self.y as f32 + total_offset) * cell_size,
+                origin_x + (self.x as f32 + drift_x) * cell_size,
+                origin_y + (self.y as f32 + total_offset + drift_y) * cell_size,
             ),
         };
 
@@ -284,5 +358,40 @@ impl Vehicle {
         };
 
         (px, py, w, h)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bump_state_enable_bounce_flag() {
+        let city_bump = BumpState::new(1.0, 6.0, false, true);
+        let marine_bump = BumpState::new(1.0, 6.0, false, false);
+
+        assert!(city_bump.bounce_offset().abs() >= 0.0);
+        // Marine bump with enable_bounce = false should strictly return 0.0
+        assert_eq!(marine_bump.bounce_offset(), 0.0);
+    }
+
+    #[test]
+    fn test_drift_state_lifecycle_and_offset() {
+        let mut drift = DriftState::new(1.0, 0.0, 0.8);
+        assert_eq!(drift.push_dir, (1.0, 0.0));
+
+        // Advance 0.15s
+        assert!(drift.update(0.15));
+        let (ox, oy) = drift.offset();
+        assert!(ox > 0.0, "Drift offset X ({}) should be positive", ox);
+        assert_eq!(oy, 0.0);
+        assert!(drift.roll().abs() > 0.0);
+
+        // Advance past total duration
+        assert!(!drift.update(0.7));
+        let (end_ox, end_oy) = drift.offset();
+        assert_eq!(end_ox, 0.0);
+        assert_eq!(end_oy, 0.0);
+        assert_eq!(drift.roll(), 0.0);
     }
 }
