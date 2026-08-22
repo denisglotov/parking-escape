@@ -1,3 +1,4 @@
+use super::theme::Theme;
 use super::vehicle::{Orientation, Vehicle};
 use crate::audio::SoundTrigger;
 use serde::{Deserialize, Serialize};
@@ -107,6 +108,8 @@ pub struct Board {
     #[serde(skip)]
     pub is_won: bool,
     #[serde(skip)]
+    pub theme: Theme,
+    #[serde(skip)]
     pub exit_animation_progress: f32,
     #[serde(skip)]
     initial_vehicles: Vec<Vehicle>,
@@ -125,6 +128,7 @@ impl Board {
             active_drag: None,
             active_coast: None,
             is_won: false,
+            theme: Theme::default(),
             exit_animation_progress: 0.0,
             initial_vehicles,
         }
@@ -171,20 +175,66 @@ impl Board {
         (min_offset, max_offset)
     }
 
+    /// Finds the index of the other vehicle that is acting as an obstacle for `vehicle_idx`
+    /// in the direction of `impact_dir`. Returns None if hitting the board boundary.
+    pub fn find_obstacle_vehicle(&self, vehicle_idx: usize, impact_dir: f32) -> Option<usize> {
+        let v = &self.vehicles[vehicle_idx];
+        let (min_bound, max_bound) = self.compute_movement_bounds(vehicle_idx);
+        let offset = if impact_dir >= 0.0 {
+            max_bound
+        } else {
+            min_bound
+        };
+
+        let (target_x, target_y) = match (v.orientation, impact_dir >= 0.0) {
+            (Orientation::Horizontal, true) => (v.x + offset + v.length, v.y),
+            (Orientation::Horizontal, false) => (v.x + offset - 1, v.y),
+            (Orientation::Vertical, true) => (v.x, v.y + offset + v.length),
+            (Orientation::Vertical, false) => (v.x, v.y + offset - 1),
+        };
+
+        if !self.is_inside_board(target_x, target_y) {
+            return None;
+        }
+
+        self.vehicles
+            .iter()
+            .enumerate()
+            .position(|(idx, other)| idx != vehicle_idx && other.contains_cell(target_x, target_y))
+    }
+
     /// Triggers a bump effect on a vehicle, setting its BumpState and returning the corresponding sound trigger.
+    /// In Marine theme, the hitting vessel does not rebounce; if another ship was struck, it drifts away from the impact.
     pub fn trigger_bump(
         &mut self,
         vehicle_idx: usize,
         impact_dir: f32,
         velocity: f32,
     ) -> Option<SoundTrigger> {
-        let v = &mut self.vehicles[vehicle_idx];
-        let is_emergency = v.kind.is_emergency();
-        v.bump_state = Some(crate::game::vehicle::BumpState::new(
+        let is_marine = self.theme == Theme::Marine;
+        let is_emergency = self.vehicles[vehicle_idx].kind.is_emergency();
+        let enable_bounce = !is_marine;
+
+        self.vehicles[vehicle_idx].bump_state = Some(crate::game::vehicle::BumpState::new(
             impact_dir,
             velocity,
             is_emergency,
+            enable_bounce,
         ));
+
+        if is_marine {
+            if let Some(other_idx) = self.find_obstacle_vehicle(vehicle_idx, impact_dir) {
+                let v = &self.vehicles[vehicle_idx];
+                let (push_x, push_y) = match v.orientation {
+                    Orientation::Horizontal => (if impact_dir >= 0.0 { 1.0 } else { -1.0 }, 0.0),
+                    Orientation::Vertical => (0.0, if impact_dir >= 0.0 { 1.0 } else { -1.0 }),
+                };
+                let intensity = (velocity.abs() / 9.0).clamp(0.4, 1.0);
+                self.vehicles[other_idx].drift_state = Some(crate::game::vehicle::DriftState::new(
+                    push_x, push_y, intensity,
+                ));
+            }
+        }
 
         if is_emergency {
             Some(SoundTrigger::Siren)
@@ -309,8 +359,8 @@ impl Board {
             let max_bound = drag.max_offset;
             let clamped_target = raw_delta.clamp(min_bound, max_bound);
 
-            // Inertia drag tracking: longer vehicles have more mass and drag resistance
-            let responsiveness = 28.0 / mass;
+            // Inertia drag tracking: ships in water have higher hydrodynamic inertia and smooth momentum lag
+            let responsiveness = self.theme.drag_responsiveness(mass);
             let blend = (1.0 - (-responsiveness * dt).exp()).clamp(0.0, 1.0);
             let current_offset = self.vehicles[v_idx].drag_offset;
             self.vehicles[v_idx].drag_offset =
@@ -357,7 +407,8 @@ impl Board {
         let v_idx = drag.vehicle_index;
         let mass = self.vehicles[v_idx].mass();
 
-        if drag.velocity.abs() > 1.2 {
+        let swipe_launch_threshold = self.theme.swipe_launch_threshold();
+        if drag.velocity.abs() > swipe_launch_threshold {
             // Launch inertial coasting!
             self.active_coast = Some(InertiaCoastState {
                 vehicle_index: v_idx,
@@ -406,6 +457,7 @@ impl Board {
                 veh.y = *saved_y;
                 veh.drag_offset = 0.0;
                 veh.bump_state = None;
+                veh.drift_state = None;
             }
             self.move_count = snapshot.move_count;
             true
@@ -419,6 +471,7 @@ impl Board {
         self.vehicles = self.initial_vehicles.clone();
         for v in &mut self.vehicles {
             v.bump_state = None;
+            v.drift_state = None;
             v.drag_offset = 0.0;
         }
         self.history.clear();
@@ -434,11 +487,16 @@ impl Board {
     pub fn update(&mut self, dt: f32) -> Option<SoundTrigger> {
         let mut sound_trigger = None;
 
-        // 1. Advance vehicle bump effects
+        // 1. Advance vehicle bump and drift effects
         for v in &mut self.vehicles {
             if let Some(bump) = &mut v.bump_state {
                 if !bump.update(dt) {
                     v.bump_state = None;
+                }
+            }
+            if let Some(drift) = &mut v.drift_state {
+                if !drift.update(dt) {
+                    v.drift_state = None;
                 }
             }
         }
@@ -448,7 +506,7 @@ impl Board {
             let v_idx = coast.vehicle_index;
             let mass = self.vehicles[v_idx].mass();
             // Higher mass = lower friction deceleration = longer, heavier glide
-            let friction = 13.0 / mass;
+            let friction = self.theme.friction(mass);
             coast.velocity -= coast.velocity * (friction * dt).min(0.95);
 
             let v = &mut self.vehicles[v_idx];
@@ -480,7 +538,8 @@ impl Board {
                     v.drag_offset = target_snap;
                     finished_coast = true;
                 } else {
-                    v.drag_offset += snap_diff * (18.0 * dt).min(0.9);
+                    let snap_speed = self.theme.snap_speed();
+                    v.drag_offset += snap_diff * (snap_speed * dt).min(0.9);
                 }
             }
 
@@ -723,5 +782,194 @@ mod tests {
         // Advance 1 frame of coasting
         let _ = board.update(0.016);
         assert!(board.vehicles[1].drag_offset > 0.0);
+    }
+
+    #[test]
+    fn test_marine_theme_and_water_inertia() {
+        let ship = Vehicle::new(
+            "player_boat",
+            VehicleKind::PlayerRed,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+
+        // Create standard city board vs marine board
+        let mut city_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        city_board.theme = Theme::City;
+
+        let mut marine_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        marine_board.theme = Theme::Marine;
+
+        // Verify marine sprite lookup
+        assert_eq!(
+            ship.kind
+                .sprite_for_theme(Orientation::Horizontal, Theme::City),
+            "player_red_h"
+        );
+        assert_eq!(
+            ship.kind
+                .sprite_for_theme(Orientation::Horizontal, Theme::Marine),
+            "ship_player_red_h"
+        );
+        assert_eq!(
+            ship.kind
+                .sprite_for_theme(Orientation::Vertical, Theme::Marine),
+            "ship_player_red_v"
+        );
+
+        // Verify emergency ships in marine theme
+        assert_eq!(
+            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, Theme::Marine),
+            "ship_patrol_h"
+        );
+        assert_eq!(
+            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, Theme::Marine),
+            "ship_sar_rescue_h"
+        );
+
+        // Test that marine theme glides farther due to lower hydrodynamic water friction
+        city_board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 5.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        marine_board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 5.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        let dt = 0.05;
+        let _ = city_board.update(dt);
+        let _ = marine_board.update(dt);
+
+        // Marine board coast velocity decelerates slower (higher remaining velocity & more drift)
+        let city_coast_vel = city_board.active_coast.as_ref().unwrap().velocity;
+        let marine_coast_vel = marine_board.active_coast.as_ref().unwrap().velocity;
+        assert!(marine_coast_vel > city_coast_vel, "Marine coast velocity ({}) should be higher than city ({}) due to lower water friction", marine_coast_vel, city_coast_vel);
+    }
+
+    #[test]
+    fn test_marine_theme_collision_no_rebounce_and_obstacle_drift() {
+        let boat_player = Vehicle::new(
+            "player_boat",
+            VehicleKind::PlayerRed,
+            1,
+            2,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+        let boat_blocker = Vehicle::new(
+            "blocker_boat",
+            VehicleKind::CarSedanBlue,
+            3,
+            1,
+            2,
+            Orientation::Vertical,
+            false,
+        );
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 2,
+            col: 0,
+        };
+
+        let mut board = Board::new(6, 6, exit, vec![boat_player, boat_blocker]);
+        board.theme = Theme::Marine;
+
+        // Player boat moves right (+1.0) and bumps into blocker boat
+        let hit_vehicle = board.find_obstacle_vehicle(0, 1.0);
+        assert_eq!(
+            hit_vehicle,
+            Some(1),
+            "Obstacle vehicle hit should be boat 1"
+        );
+
+        let snd = board.trigger_bump(0, 1.0, 6.0);
+        assert!(snd.is_some());
+
+        // 1. Hitting boat should NOT rebounce in marine theme
+        let player_bump = board.vehicles[0].bump_state.as_ref().unwrap();
+        assert_eq!(
+            player_bump.bounce_offset(),
+            0.0,
+            "Hitting boat must not rebounce in marine theme"
+        );
+
+        // 2. Struck boat should have a DriftState drifting to the right (+X)
+        let blocker_drift = board.vehicles[1].drift_state.as_ref().unwrap();
+        assert_eq!(
+            blocker_drift.push_dir,
+            (1.0, 0.0),
+            "Struck boat must drift in the impact direction (+X)"
+        );
+
+        // 3. Advance timer to verify drift offset and expiry
+        let _ = board.update(0.15);
+        let (drift_x, drift_y) = board.vehicles[1].drift_state.as_ref().unwrap().offset();
+        assert!(drift_x > 0.0, "Drift offset X should be positive");
+        assert_eq!(drift_y, 0.0);
+
+        let _ = board.update(2.5);
+        assert!(board.vehicles[0].bump_state.is_none());
+        assert!(board.vehicles[1].drift_state.is_none());
+    }
+
+    #[test]
+    fn test_marine_wall_collision() {
+        let boat = Vehicle::new(
+            "player_boat",
+            VehicleKind::PlayerRed,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+
+        let mut board = Board::new(6, 6, exit, vec![boat]);
+        board.theme = Theme::Marine;
+
+        // Boat hits the left wall (impact_dir = -1.0)
+        let hit_vehicle = board.find_obstacle_vehicle(0, -1.0);
+        assert_eq!(
+            hit_vehicle, None,
+            "Hitting wall should not find another vehicle"
+        );
+
+        let snd = board.trigger_bump(0, -1.0, -6.0);
+        assert!(snd.is_some());
+
+        // Hitting boat should have no rebounce
+        assert_eq!(
+            board.vehicles[0]
+                .bump_state
+                .as_ref()
+                .unwrap()
+                .bounce_offset(),
+            0.0
+        );
+        // No drift state on hitting boat
+        assert!(board.vehicles[0].drift_state.is_none());
     }
 }

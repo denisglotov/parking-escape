@@ -1,4 +1,5 @@
 use super::board::{Board, ExitPosition};
+use super::theme::Theme;
 use super::vehicle::Vehicle;
 use serde::{Deserialize, Serialize};
 
@@ -27,7 +28,9 @@ const fn default_par() -> u32 {
 
 impl LevelData {
     pub fn to_board(&self) -> Board {
-        Board::new(self.width, self.height, self.exit, self.vehicles.clone())
+        let mut board = Board::new(self.width, self.height, self.exit, self.vehicles.clone());
+        board.theme = Theme::for_level(self.id);
+        board
     }
 
     /// Computes earned stars (1..=3) based on moves taken versus par moves.

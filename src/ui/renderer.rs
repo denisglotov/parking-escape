@@ -1,96 +1,160 @@
 use super::background::render_nature_background;
+use super::water_fx::{compute_vessel_buoyancy, WaterRippleManager};
 use super::{BoardLayout, TextureStore, THEME};
 use crate::game::board::{Board, ExitSide};
+use crate::game::Theme;
 use macroquad::prelude::*;
 
-pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
+pub fn render_board(
+    board: &Board,
+    layout: &BoardLayout,
+    textures: &TextureStore,
+    water_ripples: &WaterRippleManager,
+) {
     let ox = layout.origin_x;
     let oy = layout.origin_y;
     let cs = layout.cell_size;
     let bw = layout.total_width;
     let bh = layout.total_height;
 
-    // 1. Draw Nature Background (Park lawn, footpaths, pond with animated ripples, flora)
+    // 1. Draw Nature or Marine Archipelago Background
     render_nature_background(board, layout, textures);
 
-    // 2. Draw outer drop shadow for the parking lot
-    draw_rectangle(
-        ox - 6.0,
-        oy - 4.0,
-        bw + 12.0,
-        bh + 14.0,
-        Color::new(0.0, 0.0, 0.0, 0.45),
-    );
+    // 2. Draw outer drop shadow for the board
+    let shadow_col = match board.theme {
+        Theme::Marine => Color::new(0.01, 0.12, 0.22, 0.45),
+        Theme::City => Color::new(0.0, 0.0, 0.0, 0.45),
+    };
+    draw_rectangle(ox - 6.0, oy - 4.0, bw + 12.0, bh + 14.0, shadow_col);
 
-    // 2. Draw Tiled Asphalt Ground
-    if let Some(asphalt_tex) = textures.get("asphalt") {
-        draw_texture_ex(
-            asphalt_tex,
-            ox,
-            oy,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(bw, bh)),
-                ..Default::default()
-            },
-        );
-    } else {
-        draw_rectangle(ox, oy, bw, bh, Color::new(0.12, 0.13, 0.16, 1.0));
-    }
-
-    // 3. Draw Stall Grid Lines & Markers
-    if let Some(marker_tex) = textures.get("stall_marker") {
-        for gx in 0..board.width {
-            for gy in 0..board.height {
+    // 3. Draw Tiled Ground (Marine Water or Asphalt)
+    match board.theme {
+        Theme::Marine => {
+            if let Some(water_tex) = textures.get(board.theme.ground_texture_key()) {
                 draw_texture_ex(
-                    marker_tex,
-                    ox + gx as f32 * cs,
-                    oy + gy as f32 * cs,
-                    Color::new(1.0, 1.0, 1.0, 0.35),
+                    water_tex,
+                    ox,
+                    oy,
+                    WHITE,
                     DrawTextureParams {
-                        dest_size: Some(vec2(cs, cs)),
+                        dest_size: Some(vec2(bw, bh)),
                         ..Default::default()
                     },
                 );
+            } else {
+                draw_rectangle(ox, oy, bw, bh, Color::new(0.15, 0.46, 0.70, 1.0));
+            }
+
+            // Draw Subtle Lighter Marine Water Grid Lines
+            for gx in 0..=board.width {
+                let x = ox + gx as f32 * cs;
+                draw_line(x, oy, x, oy + bh, 1.0, Color::new(0.50, 0.75, 1.0, 0.22));
+            }
+            for gy in 0..=board.height {
+                let y = oy + gy as f32 * cs;
+                draw_line(ox, y, ox + bw, y, 1.0, Color::new(0.50, 0.75, 1.0, 0.22));
+            }
+
+            // Mooring dots at intersections
+            for gx in 1..board.width {
+                for gy in 1..board.height {
+                    let mx = ox + gx as f32 * cs;
+                    let my = oy + gy as f32 * cs;
+                    draw_circle(mx, my, 2.0, Color::new(0.65, 0.85, 1.0, 0.35));
+                }
+            }
+
+            // Interactive Ripples
+            water_ripples.render();
+        }
+        Theme::City => {
+            if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
+                draw_texture_ex(
+                    ground_tex,
+                    ox,
+                    oy,
+                    WHITE,
+                    DrawTextureParams {
+                        dest_size: Some(vec2(bw, bh)),
+                        ..Default::default()
+                    },
+                );
+            } else {
+                draw_rectangle(ox, oy, bw, bh, Color::new(0.12, 0.13, 0.16, 1.0));
+            }
+
+            // Draw Stall Grid Lines & Markers
+            if let Some(marker_tex) = textures.get("stall_marker") {
+                for gx in 0..board.width {
+                    for gy in 0..board.height {
+                        draw_texture_ex(
+                            marker_tex,
+                            ox + gx as f32 * cs,
+                            oy + gy as f32 * cs,
+                            Color::new(1.0, 1.0, 1.0, 0.35),
+                            DrawTextureParams {
+                                dest_size: Some(vec2(cs, cs)),
+                                ..Default::default()
+                            },
+                        );
+                    }
+                }
             }
         }
     }
 
-    // 4. Draw Concrete Curbs & Border Perimeter
+    // 4. Draw Concrete Curbs or Wooden Pier Docks Border Perimeter
     let curb_thick = (cs * 0.14).max(6.0);
+    let (curb_top, curb_bot, curb_side) = match board.theme {
+        Theme::Marine => (
+            Color::new(0.48, 0.34, 0.22, 1.0),
+            Color::new(0.36, 0.24, 0.15, 1.0),
+            Color::new(0.42, 0.28, 0.18, 1.0),
+        ),
+        Theme::City => (
+            Color::new(0.32, 0.36, 0.42, 1.0),
+            Color::new(0.24, 0.28, 0.34, 1.0),
+            Color::new(0.28, 0.32, 0.38, 1.0),
+        ),
+    };
+
     draw_rectangle(
         ox - curb_thick,
         oy - curb_thick,
         bw + curb_thick * 2.0,
         curb_thick,
-        Color::new(0.32, 0.36, 0.42, 1.0),
+        curb_top,
     );
     draw_rectangle(
         ox - curb_thick,
         oy + bh,
         bw + curb_thick * 2.0,
         curb_thick,
-        Color::new(0.24, 0.28, 0.34, 1.0),
+        curb_bot,
     );
-    draw_rectangle(
-        ox - curb_thick,
-        oy,
-        curb_thick,
-        bh,
-        Color::new(0.28, 0.32, 0.38, 1.0),
-    );
-    draw_rectangle(
-        ox + bw,
-        oy,
-        curb_thick,
-        bh,
-        Color::new(0.28, 0.32, 0.38, 1.0),
-    );
+    draw_rectangle(ox - curb_thick, oy, curb_thick, bh, curb_side);
+    draw_rectangle(ox + bw, oy, curb_thick, bh, curb_side);
 
-    // 5. Draw Exit Gate
+    // Mooring bollards along piers for Marine theme
+    if board.theme == Theme::Marine {
+        let bollard_rad = curb_thick * 0.32;
+        let bollard_col = Color::new(0.20, 0.15, 0.12, 1.0);
+        for i in 0..=board.width {
+            let bx = ox + i as f32 * cs;
+            draw_circle(bx, oy - curb_thick * 0.5, bollard_rad, bollard_col);
+            draw_circle(bx, oy + bh + curb_thick * 0.5, bollard_rad, bollard_col);
+        }
+        for j in 0..=board.height {
+            let by = oy + j as f32 * cs;
+            draw_circle(ox - curb_thick * 0.5, by, bollard_rad, bollard_col);
+            draw_circle(ox + bw + curb_thick * 0.5, by, bollard_rad, bollard_col);
+        }
+    }
+
+    // 5. Draw Exit Gate (Harbor Channel Beacons or Parking Barrier Gate)
     render_exit_gate(board, layout, textures);
 
-    // 6. Draw Vehicles
+    // 6. Draw Vessels / Vehicles
     render_vehicles(board, layout, textures);
 }
 
@@ -123,15 +187,18 @@ fn render_exit_gate(board: &Board, layout: &BoardLayout, textures: &TextureStore
         }
     };
 
-    draw_rectangle(
-        gx,
-        gy,
-        gw,
-        gh,
-        Color::new(0.02, 0.25, 0.15, 0.85 * glow_pulse),
-    );
+    if board.theme == Theme::City {
+        draw_rectangle(
+            gx,
+            gy,
+            gw,
+            gh,
+            Color::new(0.02, 0.25, 0.15, 0.85 * glow_pulse),
+        );
+    }
 
-    if let Some(gate_tex) = textures.get("exit_gate") {
+    let gate_key = board.theme.exit_gate_texture_key();
+    if let Some(gate_tex) = textures.get(gate_key) {
         draw_texture_ex(
             gate_tex,
             gx,
@@ -144,7 +211,20 @@ fn render_exit_gate(board: &Board, layout: &BoardLayout, textures: &TextureStore
             },
         );
     } else {
-        draw_rectangle_lines(gx, gy, gw, gh, 2.0, THEME.accent_green);
+        match board.theme {
+            Theme::Marine => {
+                draw_rectangle(gx, gy, gw, gh, Color::new(0.0, 0.6, 0.8, 0.8 * glow_pulse));
+            }
+            Theme::City => {
+                draw_rectangle_lines(gx, gy, gw, gh, 2.0, THEME.accent_green);
+            }
+        }
+    }
+
+    if board.theme == Theme::Marine {
+        // Harbor channel beacon glow aura
+        let beacon_glow = Color::new(0.1, 0.9, 0.7, 0.35 * glow_pulse);
+        draw_circle(gx + gw * 0.5, gy + gh * 0.5, cs * 0.38, beacon_glow);
     }
 }
 
@@ -171,26 +251,45 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             }
         }
 
-        // Apply subtle squash & stretch on impact contact centered on vehicle
-        if let Some(bump) = &veh.bump_state {
-            let (scale_len, scale_wid) = bump.squash_factors();
-            let (scalex, scaley) = match veh.orientation {
-                crate::game::vehicle::Orientation::Horizontal => (scale_len, scale_wid),
-                crate::game::vehicle::Orientation::Vertical => (scale_wid, scale_len),
-            };
-            let orig_pw = pw;
-            let orig_ph = ph;
-            pw *= scalex;
-            ph *= scaley;
-            px += (orig_pw - pw) * 0.5;
-            py += (orig_ph - ph) * 0.5;
+        // Apply subtle squash & stretch on impact contact centered on vehicle (City theme only)
+        if board.theme == Theme::City {
+            if let Some(bump) = &veh.bump_state {
+                let (scale_len, scale_wid) = bump.squash_factors();
+                let (scalex, scaley) = match veh.orientation {
+                    crate::game::vehicle::Orientation::Horizontal => (scale_len, scale_wid),
+                    crate::game::vehicle::Orientation::Vertical => (scale_wid, scale_len),
+                };
+                let orig_pw = pw;
+                let orig_ph = ph;
+                pw *= scalex;
+                ph *= scaley;
+                px += (orig_pw - pw) * 0.5;
+                py += (orig_ph - ph) * 0.5;
+            }
         }
 
         if is_being_dragged {
             py -= 2.0;
         }
 
-        let sprite_name = veh.kind.sprite_name(veh.orientation);
+        // Apply marine buoyancy idle heave and roll, plus any impact drift rocking
+        let (heave_x, heave_y, roll) = if board.theme == Theme::Marine {
+            let (hx, hy, base_roll) = compute_vessel_buoyancy(idx, px, py, cs, is_being_dragged);
+            let drift_roll = veh.drift_state.as_ref().map_or(0.0, |d| d.roll());
+            (hx, hy, base_roll + drift_roll)
+        } else {
+            (0.0, 0.0, 0.0)
+        };
+        px += heave_x;
+        py += heave_y;
+
+        // 1. Draw Under-Vehicle Effects (Ground Reflection)
+        if let Some(bump) = &veh.bump_state {
+            render_ground_effects(board.theme, veh, bump, Rect::new(px, py, pw, ph), cs);
+        }
+
+        // 2. Draw Vehicle / Ship Body
+        let sprite_name = veh.kind.sprite_for_theme(veh.orientation, board.theme);
         if let Some(tex) = textures.get(sprite_name) {
             draw_texture_ex(
                 tex,
@@ -199,6 +298,8 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
                 WHITE,
                 DrawTextureParams {
                     dest_size: Some(vec2(pw, ph)),
+                    rotation: roll,
+                    pivot: Some(vec2(px + pw * 0.5, py + ph * 0.5)),
                     ..Default::default()
                 },
             );
@@ -206,58 +307,81 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             let col = if veh.is_player {
                 RED
             } else {
-                THEME.accent_blue
+                match board.theme {
+                    Theme::Marine => Color::new(0.1, 0.65, 0.85, 1.0),
+                    Theme::City => THEME.accent_blue,
+                }
             };
             draw_rectangle(px + 2.0, py + 2.0, pw - 4.0, ph - 4.0, col);
             draw_rectangle_lines(px + 2.0, py + 2.0, pw - 4.0, ph - 4.0, 2.0, WHITE);
         }
 
+        // 3. Draw Drag Selection Highlight
         if is_being_dragged {
-            draw_rectangle_lines(
-                px + 1.0,
-                py + 1.0,
-                pw - 2.0,
-                ph - 2.0,
-                2.0,
-                Color::new(1.0, 0.9, 0.3, 0.8),
-            );
+            let select_col = match board.theme {
+                Theme::Marine => Color::new(0.3, 0.95, 1.0, 0.85),
+                Theme::City => Color::new(1.0, 0.9, 0.3, 0.8),
+            };
+            draw_rectangle_lines(px + 1.0, py + 1.0, pw - 2.0, ph - 2.0, 2.0, select_col);
         }
 
-        // Render dynamic lighting, hazard flashing & emergency strobes
+        // 4. Draw Over-Vehicle Effects (Rooftop Strobes, Navigation Lights, Contact Sparks)
         if let Some(bump) = &veh.bump_state {
-            render_vehicle_effects(veh, bump, px, py, pw, ph, cs);
+            render_vehicle_effects(board.theme, veh, bump, Rect::new(px, py, pw, ph), cs);
         }
     }
 }
 
-fn render_vehicle_effects(
+/// Renders under-vehicle ground reflections beneath the vehicle.
+fn render_ground_effects(
+    theme: Theme,
     veh: &crate::game::vehicle::Vehicle,
     bump: &crate::game::vehicle::BumpState,
-    px: f32,
-    py: f32,
-    pw: f32,
-    ph: f32,
+    bounds: Rect,
     cs: f32,
 ) {
+    if veh.kind.is_emergency() {
+        let phase = bump.emergency_strobe_phase();
+        let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
+        let center_x = bounds.x + bounds.w * 0.5;
+        let center_y = bounds.y + bounds.h * 0.5;
+        let reflection_col = match theme {
+            Theme::Marine => {
+                if phase < 0.5 {
+                    Color::new(0.05, 0.75, 1.0, 0.20 * micro_pulse * bump.intensity)
+                } else {
+                    Color::new(1.0, 0.25, 0.15, 0.20 * micro_pulse * bump.intensity)
+                }
+            }
+            Theme::City => {
+                if phase < 0.5 {
+                    Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
+                } else {
+                    Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
+                }
+            }
+        };
+        draw_circle(center_x, center_y, cs * 1.5, reflection_col);
+    }
+}
+
+fn render_vehicle_effects(
+    theme: Theme,
+    veh: &crate::game::vehicle::Vehicle,
+    bump: &crate::game::vehicle::BumpState,
+    bounds: Rect,
+    cs: f32,
+) {
+    let px = bounds.x;
+    let py = bounds.y;
+    let pw = bounds.w;
+    let ph = bounds.h;
+
     let orient = veh.orientation;
     let is_emergency = veh.kind.is_emergency();
 
-    // 1. Ground pavement lighting reflection for emergency vehicles
-    if is_emergency {
-        let phase = bump.emergency_strobe_phase();
-        let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
-        let center_x = px + pw * 0.5;
-        let center_y = py + ph * 0.5;
-        let ground_col = if phase < 0.5 {
-            Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
-        } else {
-            Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
-        };
-        draw_circle(center_x, center_y, cs * 1.6, ground_col);
-    }
-
-    // 2. Headlights & taillights hazard flashing
-    if bump.is_hazard_on() {
+    // 2. Headlights for City vehicles on bump / hazard
+    if bump.is_hazard_on() && theme == Theme::City {
         let head_halo_col = Color::new(1.0, 0.96, 0.65, 0.55 * bump.intensity);
         let head_core_col = Color::new(1.0, 1.0, 0.9, 0.95);
         let tail_halo_col = Color::new(1.0, 0.25, 0.1, 0.60 * bump.intensity);
@@ -266,12 +390,10 @@ fn render_vehicle_effects(
 
         match orient {
             crate::game::vehicle::Orientation::Horizontal => {
-                // Front headlights (Right edge)
                 let fx = px + pw - cs * 0.08;
                 let h1_y = py + ph * 0.18;
                 let h2_y = py + ph * 0.82;
 
-                // Light beams projecting forward to the right
                 let beam_len = cs * 0.85;
                 draw_triangle(
                     vec2(fx, h1_y),
@@ -286,13 +408,11 @@ fn render_vehicle_effects(
                     beam_col,
                 );
 
-                // Lamp halos & bright cores
                 draw_circle(fx, h1_y, cs * 0.15, head_halo_col);
                 draw_circle(fx, h1_y, cs * 0.07, head_core_col);
                 draw_circle(fx, h2_y, cs * 0.15, head_halo_col);
                 draw_circle(fx, h2_y, cs * 0.07, head_core_col);
 
-                // Rear taillights (Left edge)
                 let rx = px + cs * 0.08;
                 let t1_y = py + ph * 0.16;
                 let t2_y = py + ph * 0.84;
@@ -302,12 +422,10 @@ fn render_vehicle_effects(
                 draw_circle(rx, t2_y, cs * 0.06, tail_core_col);
             }
             crate::game::vehicle::Orientation::Vertical => {
-                // Front headlights (Bottom edge)
                 let fy = py + ph - cs * 0.08;
                 let h1_x = px + pw * 0.18;
                 let h2_x = px + pw * 0.82;
 
-                // Light beams projecting downwards
                 let beam_len = cs * 0.85;
                 draw_triangle(
                     vec2(h1_x, fy),
@@ -322,13 +440,11 @@ fn render_vehicle_effects(
                     beam_col,
                 );
 
-                // Lamp halos & cores
                 draw_circle(h1_x, fy, cs * 0.15, head_halo_col);
                 draw_circle(h1_x, fy, cs * 0.07, head_core_col);
                 draw_circle(h2_x, fy, cs * 0.15, head_halo_col);
                 draw_circle(h2_x, fy, cs * 0.07, head_core_col);
 
-                // Rear taillights (Top edge)
                 let ry = py + cs * 0.08;
                 let t1_x = px + pw * 0.16;
                 let t2_x = px + pw * 0.84;
@@ -340,7 +456,7 @@ fn render_vehicle_effects(
         }
     }
 
-    // 3. Emergency rooftop strobe beacons (Police & Ambulance)
+    // 3. Emergency rooftop strobe beacons (Coast Guard / Patrol & SAR Ambulance)
     if is_emergency {
         let phase = bump.emergency_strobe_phase();
         let pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
@@ -486,12 +602,12 @@ fn render_vehicle_effects(
         }
     }
 
-    // 4. Contact spark starburst on obstacle collision
-    const SPARK_DURATION: f32 = 0.18;
+    // 4. Contact spark or Water splash starburst on obstacle collision
+    const SPARK_DURATION: f32 = 0.22;
     if bump.timer < SPARK_DURATION {
         let st = bump.timer / SPARK_DURATION;
         let s_alpha = (1.0 - st) * bump.intensity;
-        let s_rad = cs * (0.12 + st * 0.35);
+        let s_rad = cs * (0.15 + st * 0.45);
 
         let (cx, cy) = match orient {
             crate::game::vehicle::Orientation::Horizontal => {
@@ -512,12 +628,24 @@ fn render_vehicle_effects(
             }
         };
 
-        let spark_glow = Color::new(1.0, 0.92, 0.4, s_alpha * 0.6);
-        let spark_core = Color::new(1.0, 1.0, 0.9, s_alpha);
+        match theme {
+            Theme::Marine => {
+                // Water splash concentric ripple rings & foam spray
+                let splash_ring = Color::new(0.85, 0.95, 1.0, s_alpha * 0.8);
+                let splash_core = Color::new(0.4, 0.85, 1.0, s_alpha * 0.5);
+                draw_circle_lines(cx, cy, s_rad, 2.5, splash_ring);
+                draw_circle_lines(cx, cy, s_rad * 0.55, 1.8, splash_core);
+                draw_circle(cx, cy, s_rad * 0.25, splash_ring);
+            }
+            Theme::City => {
+                let spark_glow = Color::new(1.0, 0.92, 0.4, s_alpha * 0.6);
+                let spark_core = Color::new(1.0, 1.0, 0.9, s_alpha);
 
-        draw_circle(cx, cy, s_rad * 0.7, spark_glow);
-        draw_circle_lines(cx, cy, s_rad, 2.5, spark_core);
-        draw_line(cx - s_rad * 1.3, cy, cx + s_rad * 1.3, cy, 2.0, spark_core);
-        draw_line(cx, cy - s_rad * 1.3, cx, cy + s_rad * 1.3, 2.0, spark_core);
+                draw_circle(cx, cy, s_rad * 0.7, spark_glow);
+                draw_circle_lines(cx, cy, s_rad, 2.5, spark_core);
+                draw_line(cx - s_rad * 1.3, cy, cx + s_rad * 1.3, cy, 2.0, spark_core);
+                draw_line(cx, cy - s_rad * 1.3, cx, cy + s_rad * 1.3, 2.0, spark_core);
+            }
+        }
     }
 }
