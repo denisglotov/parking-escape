@@ -1,10 +1,16 @@
 use super::background::render_nature_background;
+use super::water_fx::{compute_vessel_buoyancy, WaterRippleManager};
 use super::{BoardLayout, TextureStore, THEME};
 use crate::game::board::{Board, ExitSide};
 use crate::game::Theme;
 use macroquad::prelude::*;
 
-pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
+pub fn render_board(
+    board: &Board,
+    layout: &BoardLayout,
+    textures: &TextureStore,
+    water_ripples: &WaterRippleManager,
+) {
     let ox = layout.origin_x;
     let oy = layout.origin_y;
     let cs = layout.cell_size;
@@ -57,6 +63,9 @@ pub fn render_board(board: &Board, layout: &BoardLayout, textures: &TextureStore
                     draw_circle(mx, my, 2.0, Color::new(0.65, 0.85, 1.0, 0.35));
                 }
             }
+
+            // Interactive Ripples
+            water_ripples.render();
         }
         Theme::City => {
             if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
@@ -262,11 +271,6 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             .active_drag
             .as_ref()
             .is_some_and(|d| d.vehicle_index == idx);
-        let is_coasting = board
-            .active_coast
-            .as_ref()
-            .is_some_and(|c| c.vehicle_index == idx);
-        let is_moving = is_being_dragged || is_coasting || veh.drag_offset.abs() > 0.01;
 
         let (mut px, mut py, mut pw, mut ph) = veh.pixel_bounds(ox, oy, cs);
 
@@ -299,10 +303,16 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             py -= 2.0;
         }
 
-        // 1. Draw Under-Vehicle Effects (Hydrodynamic Wakes & Ground Reflection)
-        if board.theme == Theme::Marine && is_moving {
-            render_ship_wake(veh, Rect::new(px, py, pw, ph), cs);
-        }
+        // Apply marine buoyancy idle heave and roll
+        let (heave_x, heave_y, roll) = if board.theme == Theme::Marine {
+            compute_vessel_buoyancy(idx, px, py, cs, is_being_dragged)
+        } else {
+            (0.0, 0.0, 0.0)
+        };
+        px += heave_x;
+        py += heave_y;
+
+        // 1. Draw Under-Vehicle Effects (Ground Reflection)
         if let Some(bump) = &veh.bump_state {
             render_ground_effects(board.theme, veh, bump, Rect::new(px, py, pw, ph), cs);
         }
@@ -317,6 +327,8 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
                 WHITE,
                 DrawTextureParams {
                     dest_size: Some(vec2(pw, ph)),
+                    rotation: roll,
+                    pivot: Some(vec2(px + pw * 0.5, py + ph * 0.5)),
                     ..Default::default()
                 },
             );
@@ -382,117 +394,6 @@ fn render_ground_effects(
     }
 }
 
-/// Renders dynamic trailing hydrodynamic wakes and white foam ripples behind moving ships.
-fn render_ship_wake(veh: &crate::game::vehicle::Vehicle, bounds: Rect, cs: f32) {
-    let px = bounds.x;
-    let py = bounds.y;
-    let pw = bounds.w;
-    let ph = bounds.h;
-
-    let time = get_time() as f32;
-    let wave_pulse = (time * 8.0).sin() * 0.15 + 0.85;
-    let foam_col = Color::new(0.88, 0.96, 1.0, 0.55 * wave_pulse);
-    let wake_wave_col = Color::new(0.25, 0.75, 0.95, 0.35 * wave_pulse);
-
-    let orient = veh.orientation;
-    let offset = veh.drag_offset;
-
-    match orient {
-        crate::game::vehicle::Orientation::Horizontal => {
-            let is_moving_right = offset >= 0.0;
-            let (stern_x, stern_y1, stern_y2, wake_dir) = if is_moving_right {
-                (px + cs * 0.05, py + ph * 0.25, py + ph * 0.75, -1.0)
-            } else {
-                (px + pw - cs * 0.05, py + ph * 0.25, py + ph * 0.75, 1.0)
-            };
-
-            let wake_len = cs * 0.55;
-            // V-shaped wake lines
-            draw_line(
-                stern_x,
-                stern_y1,
-                stern_x + wake_dir * wake_len,
-                stern_y1 - cs * 0.22,
-                2.5,
-                wake_wave_col,
-            );
-            draw_line(
-                stern_x,
-                stern_y2,
-                stern_x + wake_dir * wake_len,
-                stern_y2 + cs * 0.22,
-                2.5,
-                wake_wave_col,
-            );
-            // Foam bubbles at stern
-            draw_circle(
-                stern_x + wake_dir * cs * 0.15,
-                py + ph * 0.5,
-                cs * 0.14,
-                foam_col,
-            );
-            draw_circle(
-                stern_x + wake_dir * cs * 0.35,
-                stern_y1,
-                cs * 0.09,
-                foam_col,
-            );
-            draw_circle(
-                stern_x + wake_dir * cs * 0.35,
-                stern_y2,
-                cs * 0.09,
-                foam_col,
-            );
-        }
-        crate::game::vehicle::Orientation::Vertical => {
-            let is_moving_down = offset >= 0.0;
-            let (stern_y, stern_x1, stern_x2, wake_dir) = if is_moving_down {
-                (py + cs * 0.05, px + pw * 0.25, px + pw * 0.75, -1.0)
-            } else {
-                (py + ph - cs * 0.05, px + pw * 0.25, px + pw * 0.75, 1.0)
-            };
-
-            let wake_len = cs * 0.55;
-            // V-shaped wake lines
-            draw_line(
-                stern_x1,
-                stern_y,
-                stern_x1 - cs * 0.22,
-                stern_y + wake_dir * wake_len,
-                2.5,
-                wake_wave_col,
-            );
-            draw_line(
-                stern_x2,
-                stern_y,
-                stern_x2 + cs * 0.22,
-                stern_y + wake_dir * wake_len,
-                2.5,
-                wake_wave_col,
-            );
-            // Foam bubbles at stern
-            draw_circle(
-                px + pw * 0.5,
-                stern_y + wake_dir * cs * 0.15,
-                cs * 0.14,
-                foam_col,
-            );
-            draw_circle(
-                stern_x1,
-                stern_y + wake_dir * cs * 0.35,
-                cs * 0.09,
-                foam_col,
-            );
-            draw_circle(
-                stern_x2,
-                stern_y + wake_dir * cs * 0.35,
-                cs * 0.09,
-                foam_col,
-            );
-        }
-    }
-}
-
 fn render_vehicle_effects(
     theme: Theme,
     veh: &crate::game::vehicle::Vehicle,
@@ -508,105 +409,78 @@ fn render_vehicle_effects(
     let orient = veh.orientation;
     let is_emergency = veh.kind.is_emergency();
 
-    // 2. Headlights / Nautical Port & Starboard Navigation Lanterns
-    if bump.is_hazard_on() {
-        match theme {
-            Theme::Marine => {
-                // Marine navigation lights: Port = Red (left), Starboard = Green (right)
-                let port_col = Color::new(1.0, 0.15, 0.2, 0.85 * bump.intensity);
-                let stbd_col = Color::new(0.1, 0.95, 0.35, 0.85 * bump.intensity);
-                let glow_sz = cs * 0.16;
+    // 2. Headlights for City vehicles on bump / hazard
+    if bump.is_hazard_on() && theme == Theme::City {
+        let head_halo_col = Color::new(1.0, 0.96, 0.65, 0.55 * bump.intensity);
+        let head_core_col = Color::new(1.0, 1.0, 0.9, 0.95);
+        let tail_halo_col = Color::new(1.0, 0.25, 0.1, 0.60 * bump.intensity);
+        let tail_core_col = Color::new(1.0, 0.45, 0.2, 0.95);
+        let beam_col = Color::new(1.0, 0.95, 0.6, 0.22 * bump.intensity);
 
-                match orient {
-                    crate::game::vehicle::Orientation::Horizontal => {
-                        let bow_x = px + pw - cs * 0.12;
-                        let port_y = py + ph * 0.20;
-                        let stbd_y = py + ph * 0.80;
-                        draw_circle(bow_x, port_y, glow_sz, port_col);
-                        draw_circle(bow_x, stbd_y, glow_sz, stbd_col);
-                    }
-                    crate::game::vehicle::Orientation::Vertical => {
-                        let bow_y = py + ph - cs * 0.12;
-                        let port_x = px + pw * 0.80;
-                        let stbd_x = px + pw * 0.20;
-                        draw_circle(port_x, bow_y, glow_sz, port_col);
-                        draw_circle(stbd_x, bow_y, glow_sz, stbd_col);
-                    }
-                }
+        match orient {
+            crate::game::vehicle::Orientation::Horizontal => {
+                let fx = px + pw - cs * 0.08;
+                let h1_y = py + ph * 0.18;
+                let h2_y = py + ph * 0.82;
+
+                let beam_len = cs * 0.85;
+                draw_triangle(
+                    vec2(fx, h1_y),
+                    vec2(fx + beam_len, h1_y - cs * 0.28),
+                    vec2(fx + beam_len, h1_y + cs * 0.28),
+                    beam_col,
+                );
+                draw_triangle(
+                    vec2(fx, h2_y),
+                    vec2(fx + beam_len, h2_y - cs * 0.28),
+                    vec2(fx + beam_len, h2_y + cs * 0.28),
+                    beam_col,
+                );
+
+                draw_circle(fx, h1_y, cs * 0.15, head_halo_col);
+                draw_circle(fx, h1_y, cs * 0.07, head_core_col);
+                draw_circle(fx, h2_y, cs * 0.15, head_halo_col);
+                draw_circle(fx, h2_y, cs * 0.07, head_core_col);
+
+                let rx = px + cs * 0.08;
+                let t1_y = py + ph * 0.16;
+                let t2_y = py + ph * 0.84;
+                draw_circle(rx, t1_y, cs * 0.13, tail_halo_col);
+                draw_circle(rx, t1_y, cs * 0.06, tail_core_col);
+                draw_circle(rx, t2_y, cs * 0.13, tail_halo_col);
+                draw_circle(rx, t2_y, cs * 0.06, tail_core_col);
             }
-            Theme::City => {
-                let head_halo_col = Color::new(1.0, 0.96, 0.65, 0.55 * bump.intensity);
-                let head_core_col = Color::new(1.0, 1.0, 0.9, 0.95);
-                let tail_halo_col = Color::new(1.0, 0.25, 0.1, 0.60 * bump.intensity);
-                let tail_core_col = Color::new(1.0, 0.45, 0.2, 0.95);
-                let beam_col = Color::new(1.0, 0.95, 0.6, 0.22 * bump.intensity);
+            crate::game::vehicle::Orientation::Vertical => {
+                let fy = py + ph - cs * 0.08;
+                let h1_x = px + pw * 0.18;
+                let h2_x = px + pw * 0.82;
 
-                match orient {
-                    crate::game::vehicle::Orientation::Horizontal => {
-                        let fx = px + pw - cs * 0.08;
-                        let h1_y = py + ph * 0.18;
-                        let h2_y = py + ph * 0.82;
+                let beam_len = cs * 0.85;
+                draw_triangle(
+                    vec2(h1_x, fy),
+                    vec2(h1_x - cs * 0.28, fy + beam_len),
+                    vec2(h1_x + cs * 0.28, fy + beam_len),
+                    beam_col,
+                );
+                draw_triangle(
+                    vec2(h2_x, fy),
+                    vec2(h2_x - cs * 0.28, fy + beam_len),
+                    vec2(h2_x + cs * 0.28, fy + beam_len),
+                    beam_col,
+                );
 
-                        let beam_len = cs * 0.85;
-                        draw_triangle(
-                            vec2(fx, h1_y),
-                            vec2(fx + beam_len, h1_y - cs * 0.28),
-                            vec2(fx + beam_len, h1_y + cs * 0.28),
-                            beam_col,
-                        );
-                        draw_triangle(
-                            vec2(fx, h2_y),
-                            vec2(fx + beam_len, h2_y - cs * 0.28),
-                            vec2(fx + beam_len, h2_y + cs * 0.28),
-                            beam_col,
-                        );
+                draw_circle(h1_x, fy, cs * 0.15, head_halo_col);
+                draw_circle(h1_x, fy, cs * 0.07, head_core_col);
+                draw_circle(h2_x, fy, cs * 0.15, head_halo_col);
+                draw_circle(h2_x, fy, cs * 0.07, head_core_col);
 
-                        draw_circle(fx, h1_y, cs * 0.15, head_halo_col);
-                        draw_circle(fx, h1_y, cs * 0.07, head_core_col);
-                        draw_circle(fx, h2_y, cs * 0.15, head_halo_col);
-                        draw_circle(fx, h2_y, cs * 0.07, head_core_col);
-
-                        let rx = px + cs * 0.08;
-                        let t1_y = py + ph * 0.16;
-                        let t2_y = py + ph * 0.84;
-                        draw_circle(rx, t1_y, cs * 0.13, tail_halo_col);
-                        draw_circle(rx, t1_y, cs * 0.06, tail_core_col);
-                        draw_circle(rx, t2_y, cs * 0.13, tail_halo_col);
-                        draw_circle(rx, t2_y, cs * 0.06, tail_core_col);
-                    }
-                    crate::game::vehicle::Orientation::Vertical => {
-                        let fy = py + ph - cs * 0.08;
-                        let h1_x = px + pw * 0.18;
-                        let h2_x = px + pw * 0.82;
-
-                        let beam_len = cs * 0.85;
-                        draw_triangle(
-                            vec2(h1_x, fy),
-                            vec2(h1_x - cs * 0.28, fy + beam_len),
-                            vec2(h1_x + cs * 0.28, fy + beam_len),
-                            beam_col,
-                        );
-                        draw_triangle(
-                            vec2(h2_x, fy),
-                            vec2(h2_x - cs * 0.28, fy + beam_len),
-                            vec2(h2_x + cs * 0.28, fy + beam_len),
-                            beam_col,
-                        );
-
-                        draw_circle(h1_x, fy, cs * 0.15, head_halo_col);
-                        draw_circle(h1_x, fy, cs * 0.07, head_core_col);
-                        draw_circle(h2_x, fy, cs * 0.15, head_halo_col);
-                        draw_circle(h2_x, fy, cs * 0.07, head_core_col);
-
-                        let ry = py + cs * 0.08;
-                        let t1_x = px + pw * 0.16;
-                        let t2_x = px + pw * 0.84;
-                        draw_circle(t1_x, ry, cs * 0.13, tail_halo_col);
-                        draw_circle(t1_x, ry, cs * 0.06, tail_core_col);
-                        draw_circle(t2_x, ry, cs * 0.13, tail_halo_col);
-                        draw_circle(t2_x, ry, cs * 0.06, tail_core_col);
-                    }
-                }
+                let ry = py + cs * 0.08;
+                let t1_x = px + pw * 0.16;
+                let t2_x = px + pw * 0.84;
+                draw_circle(t1_x, ry, cs * 0.13, tail_halo_col);
+                draw_circle(t1_x, ry, cs * 0.06, tail_core_col);
+                draw_circle(t2_x, ry, cs * 0.13, tail_halo_col);
+                draw_circle(t2_x, ry, cs * 0.06, tail_core_col);
             }
         }
     }

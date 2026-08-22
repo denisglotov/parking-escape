@@ -3,12 +3,13 @@ pub mod hud;
 pub mod level_select;
 pub mod menu;
 pub mod renderer;
+pub mod water_fx;
 pub mod win_modal;
 
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
-pub use crate::game::Theme;
+pub use water_fx::WaterRippleManager;
 
 pub struct UITheme {
     pub bg_dark: Color,
