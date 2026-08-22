@@ -1,3 +1,5 @@
+use crate::game::Theme;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoundTrigger {
     Slide,
@@ -12,16 +14,17 @@ pub enum SoundTrigger {
 #[cfg(target_arch = "wasm32")]
 mod wasm_backend {
     use super::SoundTrigger;
+    use crate::game::Theme;
 
     #[link(wasm_import_module = "env")]
     extern "C" {
-        fn play_sound_slide();
-        fn play_sound_bump();
-        fn play_sound_alarm();
-        fn play_sound_siren();
+        fn play_sound_slide(is_marine: i32);
+        fn play_sound_bump(is_marine: i32);
+        fn play_sound_alarm(is_marine: i32);
+        fn play_sound_siren(is_marine: i32);
         fn play_sound_win();
         fn play_sound_click();
-        fn play_sound_exit();
+        fn play_sound_exit(is_marine: i32);
     }
 
     pub struct SoundBackend;
@@ -31,16 +34,17 @@ mod wasm_backend {
             Self
         }
 
-        pub fn play(&self, trigger: SoundTrigger) {
+        pub fn play(&self, trigger: SoundTrigger, theme: Theme) {
+            let is_marine = if theme == Theme::Marine { 1 } else { 0 };
             unsafe {
                 match trigger {
-                    SoundTrigger::Slide => play_sound_slide(),
-                    SoundTrigger::Bump => play_sound_bump(),
-                    SoundTrigger::Alarm => play_sound_alarm(),
-                    SoundTrigger::Siren => play_sound_siren(),
+                    SoundTrigger::Slide => play_sound_slide(is_marine),
+                    SoundTrigger::Bump => play_sound_bump(is_marine),
+                    SoundTrigger::Alarm => play_sound_alarm(is_marine),
+                    SoundTrigger::Siren => play_sound_siren(is_marine),
                     SoundTrigger::Win => play_sound_win(),
                     SoundTrigger::ButtonClick => play_sound_click(),
-                    SoundTrigger::ExitDrive => play_sound_exit(),
+                    SoundTrigger::ExitDrive => play_sound_exit(is_marine),
                 }
             }
         }
@@ -50,6 +54,7 @@ mod wasm_backend {
 #[cfg(not(target_arch = "wasm32"))]
 mod native_backend {
     use super::SoundTrigger;
+    use crate::game::Theme;
     use macroquad::audio::{load_sound_from_bytes, play_sound_once, Sound};
 
     pub struct SoundBackend {
@@ -60,6 +65,12 @@ mod native_backend {
         snd_win: Option<Sound>,
         snd_click: Option<Sound>,
         snd_exit: Option<Sound>,
+
+        snd_marine_slide: Option<Sound>,
+        snd_marine_bump: Option<Sound>,
+        snd_marine_alarm: Option<Sound>,
+        snd_marine_siren: Option<Sound>,
+        snd_marine_exit: Option<Sound>,
     }
 
     impl SoundBackend {
@@ -86,18 +97,49 @@ mod native_backend {
                 snd_exit: load_sound_from_bytes(include_bytes!("../assets/audio/exit_drive.wav"))
                     .await
                     .ok(),
+
+                snd_marine_slide: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/marine_slide.wav"
+                ))
+                .await
+                .ok(),
+                snd_marine_bump: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/marine_bump.wav"
+                ))
+                .await
+                .ok(),
+                snd_marine_alarm: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/marine_alarm.wav"
+                ))
+                .await
+                .ok(),
+                snd_marine_siren: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/marine_siren.wav"
+                ))
+                .await
+                .ok(),
+                snd_marine_exit: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/marine_exit.wav"
+                ))
+                .await
+                .ok(),
             }
         }
 
-        pub fn play(&self, trigger: SoundTrigger) {
-            let sound = match trigger {
-                SoundTrigger::Slide => &self.snd_slide,
-                SoundTrigger::Bump => &self.snd_bump,
-                SoundTrigger::Alarm => &self.snd_alarm,
-                SoundTrigger::Siren => &self.snd_siren,
-                SoundTrigger::Win => &self.snd_win,
-                SoundTrigger::ButtonClick => &self.snd_click,
-                SoundTrigger::ExitDrive => &self.snd_exit,
+        pub fn play(&self, trigger: SoundTrigger, theme: Theme) {
+            let sound = match (trigger, theme) {
+                (SoundTrigger::Slide, Theme::Marine) => &self.snd_marine_slide,
+                (SoundTrigger::Slide, Theme::City) => &self.snd_slide,
+                (SoundTrigger::Bump, Theme::Marine) => &self.snd_marine_bump,
+                (SoundTrigger::Bump, Theme::City) => &self.snd_bump,
+                (SoundTrigger::Alarm, Theme::Marine) => &self.snd_marine_alarm,
+                (SoundTrigger::Alarm, Theme::City) => &self.snd_alarm,
+                (SoundTrigger::Siren, Theme::Marine) => &self.snd_marine_siren,
+                (SoundTrigger::Siren, Theme::City) => &self.snd_siren,
+                (SoundTrigger::ExitDrive, Theme::Marine) => &self.snd_marine_exit,
+                (SoundTrigger::ExitDrive, Theme::City) => &self.snd_exit,
+                (SoundTrigger::Win, _) => &self.snd_win,
+                (SoundTrigger::ButtonClick, _) => &self.snd_click,
             };
 
             if let Some(snd) = sound {
@@ -126,9 +168,9 @@ impl SoundManager {
         }
     }
 
-    pub fn play(&self, trigger: SoundTrigger) {
+    pub fn play(&self, trigger: SoundTrigger, theme: Theme) {
         if self.enabled {
-            self.backend.play(trigger);
+            self.backend.play(trigger, theme);
         }
     }
 

@@ -60,7 +60,7 @@ async fn main() {
             AppScene::MainMenu => {
                 match render_main_menu(sound.enabled, &textures, screen_w, screen_h) {
                     MenuAction::Play => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         current_board = repo
                             .get_level(current_pack, current_level_idx)
                             .unwrap()
@@ -69,7 +69,7 @@ async fn main() {
                         scene = AppScene::Playing;
                     }
                     MenuAction::SelectLevels => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         scene = AppScene::LevelSelect;
                     }
                     MenuAction::ToggleSound => {
@@ -89,7 +89,7 @@ async fn main() {
                     screen_h,
                 ) {
                     LevelSelectAction::SelectLevel(pack, idx) => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         current_pack = pack;
                         current_level_idx = idx;
                         current_board = repo
@@ -100,7 +100,7 @@ async fn main() {
                         scene = AppScene::Playing;
                     }
                     LevelSelectAction::BackToMenu => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         scene = AppScene::MainMenu;
                     }
                     LevelSelectAction::None => {}
@@ -153,17 +153,17 @@ async fn main() {
                                     1.0,
                                 );
                             }
-                            sound.play(SoundTrigger::Bump);
-                            sound.play(trigger);
+                            sound.play(SoundTrigger::Bump, current_board.theme);
+                            sound.play(trigger, current_board.theme);
                         }
                     } else if is_mouse_button_released(MouseButton::Left) {
                         if let Some(trigger) = current_board.handle_touch_up() {
                             if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
-                                sound.play(SoundTrigger::Bump);
+                                sound.play(SoundTrigger::Bump, current_board.theme);
                             }
-                            sound.play(trigger);
+                            sound.play(trigger, current_board.theme);
                             if trigger == SoundTrigger::Win {
-                                sound.play(SoundTrigger::ExitDrive);
+                                sound.play(SoundTrigger::ExitDrive, current_board.theme);
                             }
                         }
                     }
@@ -171,11 +171,11 @@ async fn main() {
                     // Update board physics, vehicle inertia coasting, and animations
                     if let Some(trigger) = current_board.update(dt) {
                         if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
-                            sound.play(SoundTrigger::Bump);
+                            sound.play(SoundTrigger::Bump, current_board.theme);
                         }
-                        sound.play(trigger);
+                        sound.play(trigger, current_board.theme);
                         if trigger == SoundTrigger::Win {
-                            sound.play(SoundTrigger::ExitDrive);
+                            sound.play(SoundTrigger::ExitDrive, current_board.theme);
                         }
                     }
 
@@ -210,16 +210,16 @@ async fn main() {
                     screen_w,
                 ) {
                     HudAction::BackToMenu => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, current_board.theme);
                         scene = AppScene::LevelSelect;
                     }
                     HudAction::Undo => {
                         if current_board.undo() {
-                            sound.play(SoundTrigger::Slide);
+                            sound.play(SoundTrigger::Slide, current_board.theme);
                         }
                     }
                     HudAction::Reset => {
-                        sound.play(SoundTrigger::ButtonClick);
+                        sound.play(SoundTrigger::ButtonClick, current_board.theme);
                         current_board.reset();
                         water_ripples.clear();
                     }
@@ -243,7 +243,7 @@ async fn main() {
                         screen_h,
                     ) {
                         WinModalAction::NextLevel => {
-                            sound.play(SoundTrigger::ButtonClick);
+                            sound.play(SoundTrigger::ButtonClick, current_board.theme);
                             current_level_idx += 1;
                             current_board = repo
                                 .get_level(current_pack, current_level_idx)
@@ -253,13 +253,13 @@ async fn main() {
                             scene = AppScene::Playing;
                         }
                         WinModalAction::Replay => {
-                            sound.play(SoundTrigger::ButtonClick);
+                            sound.play(SoundTrigger::ButtonClick, current_board.theme);
                             current_board.reset();
                             water_ripples.clear();
                             scene = AppScene::Playing;
                         }
                         WinModalAction::LevelSelect => {
-                            sound.play(SoundTrigger::ButtonClick);
+                            sound.play(SoundTrigger::ButtonClick, current_board.theme);
                             scene = AppScene::LevelSelect;
                         }
                         WinModalAction::None => {}
