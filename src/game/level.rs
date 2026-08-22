@@ -27,7 +27,9 @@ const fn default_par() -> u32 {
 
 impl LevelData {
     pub fn to_board(&self) -> Board {
-        Board::new(self.width, self.height, self.exit, self.vehicles.clone())
+        let mut board = Board::new(self.width, self.height, self.exit, self.vehicles.clone());
+        board.is_marine = self.id.is_multiple_of(2);
+        board
     }
 
     /// Computes earned stars (1..=3) based on moves taken versus par moves.

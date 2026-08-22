@@ -75,6 +75,55 @@ impl VehicleKind {
             (Self::Unknown, Orientation::Vertical) => "player_red_v",
         }
     }
+
+    pub const fn marine_sprite_name(&self, orientation: Orientation) -> &'static str {
+        match (self, orientation) {
+            (Self::PlayerRed, Orientation::Horizontal) => "ship_player_red_h",
+            (Self::PlayerRed, Orientation::Vertical) => "ship_player_red_v",
+
+            (Self::CarSedanBlue, Orientation::Horizontal) => "ship_sail_blue_h",
+            (Self::CarSedanBlue, Orientation::Vertical) => "ship_sail_blue_v",
+
+            (Self::CarTaxiYellow, Orientation::Horizontal) => "ship_taxi_yellow_h",
+            (Self::CarTaxiYellow, Orientation::Vertical) => "ship_taxi_yellow_v",
+
+            (Self::CarHatchbackGreen, Orientation::Horizontal) => "ship_tug_green_h",
+            (Self::CarHatchbackGreen, Orientation::Vertical) => "ship_tug_green_v",
+
+            (Self::CarPolice, Orientation::Horizontal) => "ship_patrol_h",
+            (Self::CarPolice, Orientation::Vertical) => "ship_patrol_v",
+
+            (Self::TruckDelivery, Orientation::Horizontal) => "ship_cargo_h",
+            (Self::TruckDelivery, Orientation::Vertical) => "ship_cargo_v",
+
+            (Self::LimoWhite, Orientation::Horizontal) => "ship_yacht_white_h",
+            (Self::LimoWhite, Orientation::Vertical) => "ship_yacht_white_v",
+
+            (Self::Ambulance, Orientation::Horizontal) => "ship_sar_rescue_h",
+            (Self::Ambulance, Orientation::Vertical) => "ship_sar_rescue_v",
+
+            (Self::SemiTruck, Orientation::Horizontal) => "ship_container_h",
+            (Self::SemiTruck, Orientation::Vertical) => "ship_container_v",
+
+            (Self::BusTransit, Orientation::Horizontal) => "ship_ferry_h",
+            (Self::BusTransit, Orientation::Vertical) => "ship_ferry_v",
+
+            (Self::Unknown, Orientation::Horizontal) => "ship_player_red_h",
+            (Self::Unknown, Orientation::Vertical) => "ship_player_red_v",
+        }
+    }
+
+    pub const fn sprite_for_theme(
+        &self,
+        orientation: Orientation,
+        is_marine: bool,
+    ) -> &'static str {
+        if is_marine {
+            self.marine_sprite_name(orientation)
+        } else {
+            self.sprite_name(orientation)
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

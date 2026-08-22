@@ -107,6 +107,8 @@ pub struct Board {
     #[serde(skip)]
     pub is_won: bool,
     #[serde(skip)]
+    pub is_marine: bool,
+    #[serde(skip)]
     pub exit_animation_progress: f32,
     #[serde(skip)]
     initial_vehicles: Vec<Vehicle>,
@@ -125,6 +127,7 @@ impl Board {
             active_drag: None,
             active_coast: None,
             is_won: false,
+            is_marine: false,
             exit_animation_progress: 0.0,
             initial_vehicles,
         }
@@ -309,8 +312,12 @@ impl Board {
             let max_bound = drag.max_offset;
             let clamped_target = raw_delta.clamp(min_bound, max_bound);
 
-            // Inertia drag tracking: longer vehicles have more mass and drag resistance
-            let responsiveness = 28.0 / mass;
+            // Inertia drag tracking: ships in water have higher hydrodynamic inertia and smooth momentum lag
+            let responsiveness = if self.is_marine {
+                13.0 / mass
+            } else {
+                28.0 / mass
+            };
             let blend = (1.0 - (-responsiveness * dt).exp()).clamp(0.0, 1.0);
             let current_offset = self.vehicles[v_idx].drag_offset;
             self.vehicles[v_idx].drag_offset =
@@ -357,7 +364,8 @@ impl Board {
         let v_idx = drag.vehicle_index;
         let mass = self.vehicles[v_idx].mass();
 
-        if drag.velocity.abs() > 1.2 {
+        let swipe_launch_threshold = if self.is_marine { 0.60 } else { 1.2 };
+        if drag.velocity.abs() > swipe_launch_threshold {
             // Launch inertial coasting!
             self.active_coast = Some(InertiaCoastState {
                 vehicle_index: v_idx,
@@ -448,7 +456,11 @@ impl Board {
             let v_idx = coast.vehicle_index;
             let mass = self.vehicles[v_idx].mass();
             // Higher mass = lower friction deceleration = longer, heavier glide
-            let friction = 13.0 / mass;
+            let friction = if self.is_marine {
+                5.2 / mass
+            } else {
+                13.0 / mass
+            };
             coast.velocity -= coast.velocity * (friction * dt).min(0.95);
 
             let v = &mut self.vehicles[v_idx];
@@ -480,7 +492,8 @@ impl Board {
                     v.drag_offset = target_snap;
                     finished_coast = true;
                 } else {
-                    v.drag_offset += snap_diff * (18.0 * dt).min(0.9);
+                    let snap_speed = if self.is_marine { 11.0 } else { 18.0 };
+                    v.drag_offset += snap_diff * (snap_speed * dt).min(0.9);
                 }
             }
 
@@ -723,5 +736,79 @@ mod tests {
         // Advance 1 frame of coasting
         let _ = board.update(0.016);
         assert!(board.vehicles[1].drag_offset > 0.0);
+    }
+
+    #[test]
+    fn test_marine_theme_and_water_inertia() {
+        let ship = Vehicle::new(
+            "player_boat",
+            VehicleKind::PlayerRed,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+
+        // Create standard city board vs marine board
+        let mut city_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        city_board.is_marine = false;
+
+        let mut marine_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        marine_board.is_marine = true;
+
+        // Verify marine sprite lookup
+        assert_eq!(
+            ship.kind.sprite_for_theme(Orientation::Horizontal, false),
+            "player_red_h"
+        );
+        assert_eq!(
+            ship.kind.sprite_for_theme(Orientation::Horizontal, true),
+            "ship_player_red_h"
+        );
+        assert_eq!(
+            ship.kind.sprite_for_theme(Orientation::Vertical, true),
+            "ship_player_red_v"
+        );
+
+        // Verify emergency ships in marine theme
+        assert_eq!(
+            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, true),
+            "ship_patrol_h"
+        );
+        assert_eq!(
+            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, true),
+            "ship_sar_rescue_h"
+        );
+
+        // Test that marine theme glides farther due to lower hydrodynamic water friction
+        city_board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 5.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        marine_board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 5.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        let dt = 0.05;
+        let _ = city_board.update(dt);
+        let _ = marine_board.update(dt);
+
+        // Marine board coast velocity decelerates slower (higher remaining velocity & more drift)
+        let city_coast_vel = city_board.active_coast.as_ref().unwrap().velocity;
+        let marine_coast_vel = marine_board.active_coast.as_ref().unwrap().velocity;
+        assert!(marine_coast_vel > city_coast_vel, "Marine coast velocity ({}) should be higher than city ({}) due to lower water friction", marine_coast_vel, city_coast_vel);
     }
 }

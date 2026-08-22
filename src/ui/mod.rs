@@ -20,6 +20,27 @@ pub struct UITheme {
     pub text_secondary: Color,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GameTheme {
+    #[default]
+    City,
+    Marine,
+}
+
+impl GameTheme {
+    pub const fn for_level(level_id: u32) -> Self {
+        if level_id.is_multiple_of(2) {
+            Self::Marine
+        } else {
+            Self::City
+        }
+    }
+
+    pub const fn is_marine(&self) -> bool {
+        matches!(self, Self::Marine)
+    }
+}
+
 pub const THEME: UITheme = UITheme {
     bg_dark: Color::new(0.07, 0.08, 0.10, 1.0),
     surface: Color::new(0.12, 0.14, 0.18, 1.0),
@@ -147,6 +168,17 @@ impl TextureStore {
         load_tex!("stall_marker", "../../assets/environment/stall_marker.png");
         load_tex!("exit_gate", "../../assets/environment/exit_gate.png");
 
+        // Marine Environment textures
+        load_tex!(
+            "marine_background",
+            "../../assets/environment/marine_background.png"
+        );
+        load_tex!("marine_water", "../../assets/environment/marine_water.png");
+        load_tex!(
+            "marine_exit_gate",
+            "../../assets/environment/marine_exit_gate.png"
+        );
+
         // UI icon assets
         load_tex!("badge_parking", "../../assets/ui/badge_parking.png");
         load_tex!("star_gold", "../../assets/ui/star_gold.png");
@@ -199,6 +231,37 @@ impl TextureStore {
 
         load_veh!("bus_transit_h", "bus_transit_h.png");
         load_veh!("bus_transit_v", "bus_transit_v.png");
+
+        // Marine ship textures (both H and V)
+        load_veh!("ship_player_red_h", "ship_player_red_h.png");
+        load_veh!("ship_player_red_v", "ship_player_red_v.png");
+
+        load_veh!("ship_sail_blue_h", "ship_sail_blue_h.png");
+        load_veh!("ship_sail_blue_v", "ship_sail_blue_v.png");
+
+        load_veh!("ship_taxi_yellow_h", "ship_taxi_yellow_h.png");
+        load_veh!("ship_taxi_yellow_v", "ship_taxi_yellow_v.png");
+
+        load_veh!("ship_tug_green_h", "ship_tug_green_h.png");
+        load_veh!("ship_tug_green_v", "ship_tug_green_v.png");
+
+        load_veh!("ship_patrol_h", "ship_patrol_h.png");
+        load_veh!("ship_patrol_v", "ship_patrol_v.png");
+
+        load_veh!("ship_cargo_h", "ship_cargo_h.png");
+        load_veh!("ship_cargo_v", "ship_cargo_v.png");
+
+        load_veh!("ship_yacht_white_h", "ship_yacht_white_h.png");
+        load_veh!("ship_yacht_white_v", "ship_yacht_white_v.png");
+
+        load_veh!("ship_sar_rescue_h", "ship_sar_rescue_h.png");
+        load_veh!("ship_sar_rescue_v", "ship_sar_rescue_v.png");
+
+        load_veh!("ship_container_h", "ship_container_h.png");
+        load_veh!("ship_container_v", "ship_container_v.png");
+
+        load_veh!("ship_ferry_h", "ship_ferry_h.png");
+        load_veh!("ship_ferry_v", "ship_ferry_v.png");
 
         Self { textures, font }
     }

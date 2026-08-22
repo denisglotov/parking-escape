@@ -6,17 +6,23 @@ const ROAD_ASPHALT: Color = Color::new(0.16, 0.18, 0.22, 1.0);
 const ROAD_CURB: Color = Color::new(0.30, 0.34, 0.40, 1.0);
 const ROAD_MARKING: Color = Color::new(0.95, 0.82, 0.20, 0.85);
 
-/// Renders the park nature background texture and exit roadway connection.
+/// Renders the nature or marine background texture and exit roadway/channel connection.
 pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
     let sw = layout.screen_width;
     let sh = layout.screen_height;
     let start_y = layout.hud_height;
     let area_h = (sh - start_y).max(0.0);
 
-    // 1. Draw park background texture (or fallback solid fill)
-    if let Some(park_tex) = textures.get("park_background") {
+    let bg_tex_key = if board.is_marine {
+        "marine_background"
+    } else {
+        "park_background"
+    };
+
+    // 1. Draw background texture (or fallback solid fill)
+    if let Some(bg_tex) = textures.get(bg_tex_key) {
         draw_texture_ex(
-            park_tex,
+            bg_tex,
             0.0,
             start_y,
             WHITE,
@@ -26,14 +32,19 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
             },
         );
     } else {
-        draw_rectangle(0.0, start_y, sw, area_h, Color::new(0.12, 0.22, 0.14, 1.0));
+        let fallback_color = if board.is_marine {
+            Color::new(0.04, 0.28, 0.42, 1.0)
+        } else {
+            Color::new(0.12, 0.22, 0.14, 1.0)
+        };
+        draw_rectangle(0.0, start_y, sw, area_h, fallback_color);
     }
 
-    // 2. Draw asphalt exit road connecting exit gate to edge of screen
+    // 2. Draw asphalt exit road or marine water exit channel connecting exit gate to edge of screen
     render_exit_road(board, layout, textures);
 }
 
-/// Renders the asphalt exit road extending seamlessly from the exit gate to the screen border.
+/// Renders the asphalt exit road or water exit channel extending seamlessly from the exit gate to the screen border.
 fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
     let ox = layout.origin_x;
     let oy = layout.origin_y;
@@ -66,45 +77,92 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         }
     };
 
-    if let Some(asphalt_tex) = textures.get("asphalt") {
-        draw_texture_ex(
-            asphalt_tex,
-            rx,
-            ry,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(rw, rh)),
-                ..Default::default()
-            },
-        );
-    } else {
-        draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
-    }
+    if board.is_marine {
+        // Draw water channel
+        if let Some(water_tex) = textures.get("marine_water") {
+            draw_texture_ex(
+                water_tex,
+                rx,
+                ry,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(rw, rh)),
+                    ..Default::default()
+                },
+            );
+        } else {
+            draw_rectangle(rx, ry, rw, rh, Color::new(0.06, 0.42, 0.60, 1.0));
+        }
 
-    if is_horizontal {
-        draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
-        draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
-        draw_dashed_line_h(
-            dash_start,
-            dash_end,
-            ry + rh / 2.0,
-            2.5,
-            12.0,
-            8.0,
-            ROAD_MARKING,
-        );
+        // Wooden pier borders
+        let pier_wood = Color::new(0.42, 0.28, 0.18, 1.0);
+        let channel_buoy_light = Color::new(0.2, 0.85, 0.6, 0.8);
+        if is_horizontal {
+            draw_rectangle(rx, ry - curb_thick, rw, curb_thick, pier_wood);
+            draw_rectangle(rx, ry + rh, rw, curb_thick, pier_wood);
+            draw_dashed_line_h(
+                dash_start,
+                dash_end,
+                ry + rh / 2.0,
+                2.5,
+                16.0,
+                12.0,
+                channel_buoy_light,
+            );
+        } else {
+            draw_rectangle(rx - curb_thick, ry, curb_thick, rh, pier_wood);
+            draw_rectangle(rx + rw, ry, curb_thick, rh, pier_wood);
+            draw_dashed_line_v(
+                rx + rw / 2.0,
+                dash_start,
+                dash_end,
+                2.5,
+                16.0,
+                12.0,
+                channel_buoy_light,
+            );
+        }
     } else {
-        draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
-        draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
-        draw_dashed_line_v(
-            rx + rw / 2.0,
-            dash_start,
-            dash_end,
-            2.5,
-            12.0,
-            8.0,
-            ROAD_MARKING,
-        );
+        if let Some(asphalt_tex) = textures.get("asphalt") {
+            draw_texture_ex(
+                asphalt_tex,
+                rx,
+                ry,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(rw, rh)),
+                    ..Default::default()
+                },
+            );
+        } else {
+            draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
+        }
+
+        if is_horizontal {
+            draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
+            draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
+            draw_dashed_line_h(
+                dash_start,
+                dash_end,
+                ry + rh / 2.0,
+                2.5,
+                12.0,
+                8.0,
+                ROAD_MARKING,
+            );
+        } else {
+            draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
+            draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
+            draw_dashed_line_v(
+                rx + rw / 2.0,
+                dash_start,
+                dash_end,
+                2.5,
+                12.0,
+                8.0,
+                ROAD_MARKING,
+            );
+        }
     }
 }
 
