@@ -105,72 +105,49 @@ pub fn render_board(
 
     // 4. Draw Concrete Curbs or Wooden Pier Docks Border Perimeter
     let curb_thick = (cs * 0.14).max(6.0);
-    match board.theme {
-        Theme::Marine => {
-            let wood_top = Color::new(0.48, 0.34, 0.22, 1.0);
-            let wood_bot = Color::new(0.36, 0.24, 0.15, 1.0);
-            let wood_side = Color::new(0.42, 0.28, 0.18, 1.0);
+    let (curb_top, curb_bot, curb_side) = match board.theme {
+        Theme::Marine => (
+            Color::new(0.48, 0.34, 0.22, 1.0),
+            Color::new(0.36, 0.24, 0.15, 1.0),
+            Color::new(0.42, 0.28, 0.18, 1.0),
+        ),
+        Theme::City => (
+            Color::new(0.32, 0.36, 0.42, 1.0),
+            Color::new(0.24, 0.28, 0.34, 1.0),
+            Color::new(0.28, 0.32, 0.38, 1.0),
+        ),
+    };
 
-            draw_rectangle(
-                ox - curb_thick,
-                oy - curb_thick,
-                bw + curb_thick * 2.0,
-                curb_thick,
-                wood_top,
-            );
-            draw_rectangle(
-                ox - curb_thick,
-                oy + bh,
-                bw + curb_thick * 2.0,
-                curb_thick,
-                wood_bot,
-            );
-            draw_rectangle(ox - curb_thick, oy, curb_thick, bh, wood_side);
-            draw_rectangle(ox + bw, oy, curb_thick, bh, wood_side);
+    draw_rectangle(
+        ox - curb_thick,
+        oy - curb_thick,
+        bw + curb_thick * 2.0,
+        curb_thick,
+        curb_top,
+    );
+    draw_rectangle(
+        ox - curb_thick,
+        oy + bh,
+        bw + curb_thick * 2.0,
+        curb_thick,
+        curb_bot,
+    );
+    draw_rectangle(ox - curb_thick, oy, curb_thick, bh, curb_side);
+    draw_rectangle(ox + bw, oy, curb_thick, bh, curb_side);
 
-            // Mooring bollards along piers
-            let bollard_rad = curb_thick * 0.32;
-            let bollard_col = Color::new(0.20, 0.15, 0.12, 1.0);
-            for i in 0..=board.width {
-                let bx = ox + i as f32 * cs;
-                draw_circle(bx, oy - curb_thick * 0.5, bollard_rad, bollard_col);
-                draw_circle(bx, oy + bh + curb_thick * 0.5, bollard_rad, bollard_col);
-            }
-            for j in 0..=board.height {
-                let by = oy + j as f32 * cs;
-                draw_circle(ox - curb_thick * 0.5, by, bollard_rad, bollard_col);
-                draw_circle(ox + bw + curb_thick * 0.5, by, bollard_rad, bollard_col);
-            }
+    // Mooring bollards along piers for Marine theme
+    if board.theme == Theme::Marine {
+        let bollard_rad = curb_thick * 0.32;
+        let bollard_col = Color::new(0.20, 0.15, 0.12, 1.0);
+        for i in 0..=board.width {
+            let bx = ox + i as f32 * cs;
+            draw_circle(bx, oy - curb_thick * 0.5, bollard_rad, bollard_col);
+            draw_circle(bx, oy + bh + curb_thick * 0.5, bollard_rad, bollard_col);
         }
-        Theme::City => {
-            draw_rectangle(
-                ox - curb_thick,
-                oy - curb_thick,
-                bw + curb_thick * 2.0,
-                curb_thick,
-                Color::new(0.32, 0.36, 0.42, 1.0),
-            );
-            draw_rectangle(
-                ox - curb_thick,
-                oy + bh,
-                bw + curb_thick * 2.0,
-                curb_thick,
-                Color::new(0.24, 0.28, 0.34, 1.0),
-            );
-            draw_rectangle(
-                ox - curb_thick,
-                oy,
-                curb_thick,
-                bh,
-                Color::new(0.28, 0.32, 0.38, 1.0),
-            );
-            draw_rectangle(
-                ox + bw,
-                oy,
-                curb_thick,
-                bh,
-                Color::new(0.28, 0.32, 0.38, 1.0),
-            );
+        for j in 0..=board.height {
+            let by = oy + j as f32 * cs;
+            draw_circle(ox - curb_thick * 0.5, by, bollard_rad, bollard_col);
+            draw_circle(ox + bw + curb_thick * 0.5, by, bollard_rad, bollard_col);
         }
     }
 
@@ -210,54 +187,44 @@ fn render_exit_gate(board: &Board, layout: &BoardLayout, textures: &TextureStore
         }
     };
 
-    match board.theme {
-        Theme::Marine => {
-            let gate_key = board.theme.exit_gate_texture_key();
-            if let Some(gate_tex) = textures.get(gate_key) {
-                draw_texture_ex(
-                    gate_tex,
-                    gx,
-                    gy,
-                    Color::new(1.0, 1.0, 1.0, glow_pulse),
-                    DrawTextureParams {
-                        dest_size: Some(vec2(gw, gh)),
-                        rotation: rot.to_radians(),
-                        ..Default::default()
-                    },
-                );
-            } else {
+    if board.theme == Theme::City {
+        draw_rectangle(
+            gx,
+            gy,
+            gw,
+            gh,
+            Color::new(0.02, 0.25, 0.15, 0.85 * glow_pulse),
+        );
+    }
+
+    let gate_key = board.theme.exit_gate_texture_key();
+    if let Some(gate_tex) = textures.get(gate_key) {
+        draw_texture_ex(
+            gate_tex,
+            gx,
+            gy,
+            Color::new(1.0, 1.0, 1.0, glow_pulse),
+            DrawTextureParams {
+                dest_size: Some(vec2(gw, gh)),
+                rotation: rot.to_radians(),
+                ..Default::default()
+            },
+        );
+    } else {
+        match board.theme {
+            Theme::Marine => {
                 draw_rectangle(gx, gy, gw, gh, Color::new(0.0, 0.6, 0.8, 0.8 * glow_pulse));
             }
-
-            // Harbor channel beacon glow aura
-            let beacon_glow = Color::new(0.1, 0.9, 0.7, 0.35 * glow_pulse);
-            draw_circle(gx + gw * 0.5, gy + gh * 0.5, cs * 0.38, beacon_glow);
-        }
-        Theme::City => {
-            draw_rectangle(
-                gx,
-                gy,
-                gw,
-                gh,
-                Color::new(0.02, 0.25, 0.15, 0.85 * glow_pulse),
-            );
-
-            if let Some(gate_tex) = textures.get(board.theme.exit_gate_texture_key()) {
-                draw_texture_ex(
-                    gate_tex,
-                    gx,
-                    gy,
-                    Color::new(1.0, 1.0, 1.0, glow_pulse),
-                    DrawTextureParams {
-                        dest_size: Some(vec2(gw, gh)),
-                        rotation: rot.to_radians(),
-                        ..Default::default()
-                    },
-                );
-            } else {
+            Theme::City => {
                 draw_rectangle_lines(gx, gy, gw, gh, 2.0, THEME.accent_green);
             }
         }
+    }
+
+    if board.theme == Theme::Marine {
+        // Harbor channel beacon glow aura
+        let beacon_glow = Color::new(0.1, 0.9, 0.7, 0.35 * glow_pulse);
+        draw_circle(gx + gw * 0.5, gy + gh * 0.5, cs * 0.38, beacon_glow);
     }
 }
 

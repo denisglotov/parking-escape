@@ -73,95 +73,63 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         }
     };
 
-    match board.theme {
-        Theme::Marine => {
-            // Draw water channel
-            if let Some(water_tex) = textures.get(board.theme.ground_texture_key()) {
-                draw_texture_ex(
-                    water_tex,
-                    rx,
-                    ry,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(rx, ry, rw, rh, Color::new(0.15, 0.46, 0.70, 1.0));
-            }
+    // 1. Draw ground surface texture or fallback rectangle
+    let ground_key = board.theme.ground_texture_key();
+    if let Some(ground_tex) = textures.get(ground_key) {
+        draw_texture_ex(
+            ground_tex,
+            rx,
+            ry,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(rw, rh)),
+                ..Default::default()
+            },
+        );
+    } else {
+        let fallback_color = match board.theme {
+            Theme::Marine => Color::new(0.15, 0.46, 0.70, 1.0),
+            Theme::City => ROAD_ASPHALT,
+        };
+        draw_rectangle(rx, ry, rw, rh, fallback_color);
+    }
 
-            // Wooden pier borders
-            let pier_wood = Color::new(0.42, 0.28, 0.18, 1.0);
-            let channel_buoy_light = Color::new(0.2, 0.85, 0.6, 0.8);
-            if is_horizontal {
-                draw_rectangle(rx, ry - curb_thick, rw, curb_thick, pier_wood);
-                draw_rectangle(rx, ry + rh, rw, curb_thick, pier_wood);
-                draw_dashed_line_h(
-                    dash_start,
-                    dash_end,
-                    ry + rh / 2.0,
-                    2.5,
-                    16.0,
-                    12.0,
-                    channel_buoy_light,
-                );
-            } else {
-                draw_rectangle(rx - curb_thick, ry, curb_thick, rh, pier_wood);
-                draw_rectangle(rx + rw, ry, curb_thick, rh, pier_wood);
-                draw_dashed_line_v(
-                    rx + rw / 2.0,
-                    dash_start,
-                    dash_end,
-                    2.5,
-                    16.0,
-                    12.0,
-                    channel_buoy_light,
-                );
-            }
-        }
-        Theme::City => {
-            if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
-                draw_texture_ex(
-                    ground_tex,
-                    rx,
-                    ry,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(rw, rh)),
-                        ..Default::default()
-                    },
-                );
-            } else {
-                draw_rectangle(rx, ry, rw, rh, ROAD_ASPHALT);
-            }
+    // 2. Resolve theme-specific border curb/pier color and centerline dash styling
+    let (border_color, dash_color, dash_len, dash_gap) = match board.theme {
+        Theme::Marine => (
+            Color::new(0.42, 0.28, 0.18, 1.0),
+            Color::new(0.2, 0.85, 0.6, 0.8),
+            16.0,
+            12.0,
+        ),
+        Theme::City => (ROAD_CURB, ROAD_MARKING, 12.0, 8.0),
+    };
 
-            if is_horizontal {
-                draw_rectangle(rx, ry - curb_thick, rw, curb_thick, ROAD_CURB);
-                draw_rectangle(rx, ry + rh, rw, curb_thick, ROAD_CURB);
-                draw_dashed_line_h(
-                    dash_start,
-                    dash_end,
-                    ry + rh / 2.0,
-                    2.5,
-                    12.0,
-                    8.0,
-                    ROAD_MARKING,
-                );
-            } else {
-                draw_rectangle(rx - curb_thick, ry, curb_thick, rh, ROAD_CURB);
-                draw_rectangle(rx + rw, ry, curb_thick, rh, ROAD_CURB);
-                draw_dashed_line_v(
-                    rx + rw / 2.0,
-                    dash_start,
-                    dash_end,
-                    2.5,
-                    12.0,
-                    8.0,
-                    ROAD_MARKING,
-                );
-            }
-        }
+    // 3. Draw border curbs/piers and dashed centerline
+    if is_horizontal {
+        draw_rectangle(rx, ry - curb_thick, rw, curb_thick, border_color);
+        draw_rectangle(rx, ry + rh, rw, curb_thick, border_color);
+        draw_dashed_line_h(
+            dash_start,
+            dash_end,
+            ry + rh / 2.0,
+            2.5,
+            dash_len,
+            dash_gap,
+            dash_color,
+        );
+    } else {
+        draw_rectangle(rx - curb_thick, ry, curb_thick, rh, border_color);
+        draw_rectangle(rx + rw, ry, curb_thick, rh, border_color);
+        draw_dashed_line_v(
+            rx + rw / 2.0,
+            dash_start,
+            dash_end,
+            2.5,
+            dash_len,
+            dash_gap,
+            dash_color,
+        );
     }
 }
 
