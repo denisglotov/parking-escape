@@ -48,6 +48,14 @@ pub struct BoardSnapshot {
 }
 
 #[derive(Debug, Clone)]
+pub struct InertiaCoastState {
+    pub vehicle_index: usize,
+    pub velocity: f32,
+    pub min_offset: f32,
+    pub max_offset: f32,
+}
+
+#[derive(Debug, Clone)]
 pub struct DragState {
     pub vehicle_index: usize,
     pub start_pos: (f32, f32),
@@ -95,6 +103,8 @@ pub struct Board {
     #[serde(skip)]
     pub active_drag: Option<DragState>,
     #[serde(skip)]
+    pub active_coast: Option<InertiaCoastState>,
+    #[serde(skip)]
     pub is_won: bool,
     #[serde(skip)]
     pub exit_animation_progress: f32,
@@ -113,6 +123,7 @@ impl Board {
             move_count: 0,
             history: Vec::new(),
             active_drag: None,
+            active_coast: None,
             is_won: false,
             exit_animation_progress: 0.0,
             initial_vehicles,
@@ -182,6 +193,46 @@ impl Board {
         }
     }
 
+    /// Finalizes the continuous `drag_offset` of a vehicle, snapping to the integer grid,
+    /// recording the history snapshot, updating move count, and checking win conditions.
+    pub fn finalize_vehicle_offset(&mut self, vehicle_idx: usize) -> Option<SoundTrigger> {
+        let offset = self.vehicles[vehicle_idx].drag_offset;
+        let rounded_offset = offset.round() as i32;
+        self.vehicles[vehicle_idx].drag_offset = 0.0;
+
+        if rounded_offset != 0 {
+            let positions = self.vehicles.iter().map(|veh| (veh.x, veh.y)).collect();
+            self.history.push(BoardSnapshot {
+                positions,
+                move_count: self.move_count,
+            });
+
+            let v = &mut self.vehicles[vehicle_idx];
+            match v.orientation {
+                Orientation::Horizontal => v.x += rounded_offset,
+                Orientation::Vertical => v.y += rounded_offset,
+            }
+
+            self.move_count += 1;
+
+            let (is_player, orientation, vx, vy, vlen) =
+                (v.is_player, v.orientation, v.x, v.y, v.length);
+
+            if is_player
+                && self
+                    .exit
+                    .is_reached(orientation, vx, vy, vlen, self.width, self.height)
+            {
+                self.is_won = true;
+                return Some(SoundTrigger::Win);
+            }
+
+            Some(SoundTrigger::Slide)
+        } else {
+            None
+        }
+    }
+
     /// Handles pointer/touch down event. Returns true if a vehicle was selected.
     pub fn handle_touch_down(
         &mut self,
@@ -193,6 +244,11 @@ impl Board {
     ) -> bool {
         if self.is_won {
             return false;
+        }
+
+        // If any vehicle is coasting with inertia, finalize it immediately
+        if let Some(coast) = self.active_coast.take() {
+            self.finalize_vehicle_offset(coast.vehicle_index);
         }
 
         let hit = self.vehicles.iter().enumerate().rev().find_map(|(idx, v)| {
@@ -220,7 +276,7 @@ impl Board {
         }
     }
 
-    /// Handles continuous pointer movement during drag.
+    /// Handles continuous pointer movement during drag with inertia.
     /// Returns Some(SoundTrigger) if a fast slide bump occurred against an obstacle.
     pub fn handle_touch_move(
         &mut self,
@@ -235,6 +291,7 @@ impl Board {
             let drag = self.active_drag.as_mut()?;
             let v_idx = drag.vehicle_index;
             let orient = self.vehicles[v_idx].orientation;
+            let mass = self.vehicles[v_idx].mass();
 
             let (cur_axis_pos, last_axis_pos, start_axis_pos) = match orient {
                 Orientation::Horizontal => (mouse_x, drag.last_pos.0, drag.start_pos.0),
@@ -250,9 +307,14 @@ impl Board {
             let raw_delta = (cur_axis_pos - start_axis_pos) / cell_size;
             let min_bound = drag.min_offset;
             let max_bound = drag.max_offset;
+            let clamped_target = raw_delta.clamp(min_bound, max_bound);
 
-            let clamped_offset = raw_delta.clamp(min_bound, max_bound);
-            self.vehicles[v_idx].drag_offset = clamped_offset;
+            // Inertia drag tracking: longer vehicles have more mass and drag resistance
+            let responsiveness = 28.0 / mass;
+            let blend = (1.0 - (-responsiveness * dt).exp()).clamp(0.0, 1.0);
+            let current_offset = self.vehicles[v_idx].drag_offset;
+            self.vehicles[v_idx].drag_offset =
+                current_offset + (clamped_target - current_offset) * blend;
 
             // Reset bump latch when pulling away from barriers
             if raw_delta > min_bound + 0.25 {
@@ -262,18 +324,18 @@ impl Board {
                 drag.has_bumped_max = false;
             }
 
-            // Hard slide threshold in cells/sec (only trigger on very fast slides / hard bumps)
-            const HARD_BUMP_SPEED_THRESHOLD: f32 = 8.0;
+            // Hard slide threshold in cells/sec (scales with mass)
+            let hard_speed_threshold = 5.2 / mass.sqrt();
 
             if raw_delta <= min_bound
                 && !drag.has_bumped_min
-                && drag.velocity < -HARD_BUMP_SPEED_THRESHOLD
+                && drag.velocity < -hard_speed_threshold
             {
                 drag.has_bumped_min = true;
                 do_bump = Some((-1.0, drag.velocity));
             } else if raw_delta >= max_bound
                 && !drag.has_bumped_max
-                && drag.velocity > HARD_BUMP_SPEED_THRESHOLD
+                && drag.velocity > hard_speed_threshold
             {
                 drag.has_bumped_max = true;
                 do_bump = Some((1.0, drag.velocity));
@@ -289,72 +351,43 @@ impl Board {
         }
     }
 
-    /// Handles pointer up / touch release. Snaps to grid and checks for move/win.
+    /// Handles pointer up / touch release. Starts inertial coasting if swiped or snaps to grid.
     pub fn handle_touch_up(&mut self) -> Option<SoundTrigger> {
         let drag = self.active_drag.take()?;
         let v_idx = drag.vehicle_index;
-        let offset = self.vehicles[v_idx].drag_offset;
-        let rounded_offset = offset.round() as i32;
+        let mass = self.vehicles[v_idx].mass();
 
-        self.vehicles[v_idx].drag_offset = 0.0;
-
-        const HARD_BUMP_SPEED_THRESHOLD: f32 = 8.0;
-
-        let has_moved = rounded_offset != 0;
-        if has_moved {
-            // Save snapshot
-            let positions = self.vehicles.iter().map(|veh| (veh.x, veh.y)).collect();
-            self.history.push(BoardSnapshot {
-                positions,
-                move_count: self.move_count,
+        if drag.velocity.abs() > 1.2 {
+            // Launch inertial coasting!
+            self.active_coast = Some(InertiaCoastState {
+                vehicle_index: v_idx,
+                velocity: drag.velocity,
+                min_offset: drag.min_offset,
+                max_offset: drag.max_offset,
             });
-
-            let v = &mut self.vehicles[v_idx];
-            match v.orientation {
-                Orientation::Horizontal => v.x += rounded_offset,
-                Orientation::Vertical => v.y += rounded_offset,
-            }
-
-            self.move_count += 1;
-
-            let (is_player, orientation, vx, vy, vlen) =
-                (v.is_player, v.orientation, v.x, v.y, v.length);
-
-            if is_player
-                && self
-                    .exit
-                    .is_reached(orientation, vx, vy, vlen, self.width, self.height)
-            {
-                self.is_won = true;
-                return Some(SoundTrigger::Win);
-            }
-
-            // Only trigger full hard bump effect if moving at high speed against an obstacle
-            let (new_min, new_max) = self.compute_movement_bounds(v_idx);
-            let hit_boundary =
-                (rounded_offset > 0 && new_max == 0) || (rounded_offset < 0 && new_min == 0);
-            if hit_boundary && drag.velocity.abs() >= HARD_BUMP_SPEED_THRESHOLD {
-                let dir = if rounded_offset > 0 { 1.0 } else { -1.0 };
-                let bump_sound = self.trigger_bump(v_idx, dir, drag.velocity);
-                return bump_sound.or(Some(SoundTrigger::Bump));
-            }
-
-            Some(SoundTrigger::Slide)
-        } else if drag.velocity.abs() >= HARD_BUMP_SPEED_THRESHOLD {
-            let dir = if drag.velocity != 0.0 {
-                drag.velocity.signum()
-            } else if offset != 0.0 {
-                offset.signum()
-            } else {
-                1.0
-            };
-            let bump_sound = self.trigger_bump(v_idx, dir, drag.velocity);
-            bump_sound.or(Some(SoundTrigger::Bump))
-        } else if offset.abs() > 0.08 {
-            // Gentle nudge against obstacle: quiet bump sound only, no alarm or flashers
-            Some(SoundTrigger::Bump)
-        } else {
             None
+        } else {
+            let bump_speed_threshold = 5.2 / mass.sqrt();
+            if drag.velocity.abs() >= bump_speed_threshold {
+                let dir = if drag.velocity != 0.0 {
+                    drag.velocity.signum()
+                } else if self.vehicles[v_idx].drag_offset != 0.0 {
+                    self.vehicles[v_idx].drag_offset.signum()
+                } else {
+                    1.0
+                };
+                let bump_sound = self.trigger_bump(v_idx, dir, drag.velocity);
+                self.finalize_vehicle_offset(v_idx);
+                bump_sound.or(Some(SoundTrigger::Bump))
+            } else {
+                let offset = self.vehicles[v_idx].drag_offset;
+                let trigger = self.finalize_vehicle_offset(v_idx);
+                if trigger.is_none() && offset.abs() > 0.08 {
+                    Some(SoundTrigger::Bump)
+                } else {
+                    trigger
+                }
+            }
         }
     }
 
@@ -364,6 +397,9 @@ impl Board {
             return false;
         }
 
+        self.active_coast = None;
+        self.active_drag = None;
+
         if let Some(snapshot) = self.history.pop() {
             for (veh, (saved_x, saved_y)) in self.vehicles.iter_mut().zip(&snapshot.positions) {
                 veh.x = *saved_x;
@@ -372,7 +408,6 @@ impl Board {
                 veh.bump_state = None;
             }
             self.move_count = snapshot.move_count;
-            self.active_drag = None;
             true
         } else {
             false
@@ -384,30 +419,90 @@ impl Board {
         self.vehicles = self.initial_vehicles.clone();
         for v in &mut self.vehicles {
             v.bump_state = None;
+            v.drag_offset = 0.0;
         }
         self.history.clear();
         self.move_count = 0;
         self.active_drag = None;
+        self.active_coast = None;
         self.is_won = false;
         self.exit_animation_progress = 0.0;
     }
 
-    /// Updates active vehicle bump timers and exit drive-off animation.
-    /// Returns true if any animation (bump effect or exit drive-off) is actively running.
-    pub fn update(&mut self, dt: f32) -> bool {
-        let mut any_animating = false;
+    /// Updates active vehicle bump timers, inertial coasting, and exit drive-off animation.
+    /// Returns Some(SoundTrigger) if an audio event (bump/slide/win) was triggered.
+    pub fn update(&mut self, dt: f32) -> Option<SoundTrigger> {
+        let mut sound_trigger = None;
+
+        // 1. Advance vehicle bump effects
         for v in &mut self.vehicles {
             if let Some(bump) = &mut v.bump_state {
-                if bump.update(dt) {
-                    any_animating = true;
-                } else {
+                if !bump.update(dt) {
                     v.bump_state = None;
                 }
             }
         }
 
-        let exit_anim = self.update_exit_animation(dt);
-        any_animating || exit_anim
+        // 2. Advance Inertia Coasting physics
+        if let Some(coast) = &mut self.active_coast {
+            let v_idx = coast.vehicle_index;
+            let mass = self.vehicles[v_idx].mass();
+            // Higher mass = lower friction deceleration = longer, heavier glide
+            let friction = 13.0 / mass;
+            coast.velocity -= coast.velocity * (friction * dt).min(0.95);
+
+            let v = &mut self.vehicles[v_idx];
+            v.drag_offset += coast.velocity * dt;
+
+            let min_b = coast.min_offset;
+            let max_b = coast.max_offset;
+            let bump_thresh = 4.8 / mass.sqrt();
+
+            let mut finished_coast = false;
+            let mut hit_bump_dir = None;
+
+            if v.drag_offset <= min_b {
+                v.drag_offset = min_b;
+                if coast.velocity < -bump_thresh {
+                    hit_bump_dir = Some(-1.0);
+                }
+                finished_coast = true;
+            } else if v.drag_offset >= max_b {
+                v.drag_offset = max_b;
+                if coast.velocity > bump_thresh {
+                    hit_bump_dir = Some(1.0);
+                }
+                finished_coast = true;
+            } else if coast.velocity.abs() < 0.35 {
+                let target_snap = v.drag_offset.round();
+                let snap_diff = target_snap - v.drag_offset;
+                if snap_diff.abs() < 0.03 {
+                    v.drag_offset = target_snap;
+                    finished_coast = true;
+                } else {
+                    v.drag_offset += snap_diff * (18.0 * dt).min(0.9);
+                }
+            }
+
+            let coast_vel = coast.velocity;
+
+            if finished_coast {
+                self.active_coast = None;
+                if let Some(dir) = hit_bump_dir {
+                    let bump_snd = self.trigger_bump(v_idx, dir, coast_vel);
+                    self.finalize_vehicle_offset(v_idx);
+                    sound_trigger = bump_snd.or(Some(SoundTrigger::Bump));
+                } else {
+                    let move_snd = self.finalize_vehicle_offset(v_idx);
+                    sound_trigger = move_snd.or(Some(SoundTrigger::Slide));
+                }
+            }
+        }
+
+        // 3. Update exit animation if won
+        self.update_exit_animation(dt);
+
+        sound_trigger
     }
 
     /// Updates exit drive-off animation if level is won.
@@ -563,12 +658,70 @@ mod tests {
         assert!(initial_bounce.abs() >= 0.0);
 
         // Advance timer past duration
-        assert!(board.update(0.5));
+        let _ = board.update(0.5);
         assert!(board.vehicles[0].bump_state.is_some());
-        assert!(!board.update(2.5));
+        let _ = board.update(2.5);
         // All bump states should have expired and reset to None
         assert!(board.vehicles[0].bump_state.is_none());
         assert!(board.vehicles[1].bump_state.is_none());
         assert!(board.vehicles[2].bump_state.is_none());
+    }
+
+    #[test]
+    fn test_vehicle_mass_and_inertia_coasting() {
+        let car = Vehicle::new(
+            "c",
+            VehicleKind::CarSedanBlue,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            false,
+        );
+        let truck = Vehicle::new(
+            "t",
+            VehicleKind::TruckDelivery,
+            0,
+            1,
+            3,
+            Orientation::Horizontal,
+            false,
+        );
+        let semi = Vehicle::new(
+            "s",
+            VehicleKind::SemiTruck,
+            0,
+            2,
+            4,
+            Orientation::Horizontal,
+            false,
+        );
+
+        // Verify longer vehicles have strictly greater mass
+        assert!(car.mass() < truck.mass());
+        assert!(truck.mass() < semi.mass());
+        assert_eq!(car.mass(), 1.0);
+        assert_eq!(truck.mass(), 1.8);
+        assert_eq!(semi.mass(), 2.7);
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+
+        let mut board = Board::new(6, 6, exit, vec![car, truck, semi]);
+
+        // Start inertial coast on truck
+        board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 1,
+            velocity: 6.0,
+            min_offset: 0.0,
+            max_offset: 3.0,
+        });
+
+        // Advance 1 frame of coasting
+        let _ = board.update(0.016);
+        assert!(board.vehicles[1].drag_offset > 0.0);
     }
 }

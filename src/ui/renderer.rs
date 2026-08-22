@@ -171,7 +171,7 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             }
         }
 
-        // Apply squash & stretch on impact contact
+        // Apply subtle squash & stretch on impact contact centered on vehicle
         if let Some(bump) = &veh.bump_state {
             let (scale_len, scale_wid) = bump.squash_factors();
             let (scalex, scaley) = match veh.orientation {
@@ -182,20 +182,8 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             let orig_ph = ph;
             pw *= scalex;
             ph *= scaley;
-            match veh.orientation {
-                crate::game::vehicle::Orientation::Horizontal => {
-                    py += (orig_ph - ph) * 0.5;
-                    if bump.impact_direction > 0.0 {
-                        px += orig_pw - pw;
-                    }
-                }
-                crate::game::vehicle::Orientation::Vertical => {
-                    px += (orig_pw - pw) * 0.5;
-                    if bump.impact_direction > 0.0 {
-                        py += orig_ph - ph;
-                    }
-                }
-            }
+            px += (orig_pw - pw) * 0.5;
+            py += (orig_ph - ph) * 0.5;
         }
 
         if is_being_dragged {

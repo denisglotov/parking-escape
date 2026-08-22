@@ -93,7 +93,7 @@ pub struct BumpState {
 
 impl BumpState {
     pub fn new(impact_direction: f32, velocity: f32, is_emergency: bool) -> Self {
-        let intensity = (velocity.abs() / 8.0).clamp(0.4, 1.0);
+        let intensity = (velocity.abs() / 9.0).clamp(0.6, 1.0);
         let total_duration = if is_emergency { 2.2 } else { 1.3 };
         Self {
             impact_direction: if impact_direction >= 0.0 { 1.0 } else { -1.0 },
@@ -105,17 +105,17 @@ impl BumpState {
     }
 
     /// Computes physical spring recoil bounce offset (in grid fraction units).
-    /// Bounces opposite to the impact direction with a damped oscillation over the first 0.32s.
+    /// Bounces opposite to the impact direction with a visible damped oscillation over ~0.35s.
     pub fn bounce_offset(&self) -> f32 {
-        const BOUNCE_TIME: f32 = 0.30;
-        if self.timer >= BOUNCE_TIME {
+        const DURATION: f32 = 0.35;
+        if self.timer >= DURATION {
             return 0.0;
         }
-        let t = self.timer / BOUNCE_TIME;
-        // Damped oscillation
-        let oscillation = (t * std::f32::consts::PI * 3.0).sin();
-        let envelope = (1.0 - t).powi(2);
-        -self.impact_direction * 0.18 * self.intensity * oscillation * envelope
+        let t = self.timer / DURATION;
+        // Damped harmonic recoil: reaches peak recoil away from obstacle, then springs back
+        let wave = (t * std::f32::consts::PI * 2.8).sin();
+        let decay = (1.0 - t).powi(2);
+        -self.impact_direction * 0.28 * self.intensity * wave * decay
     }
 
     /// Computes squash and stretch scale factors `(scale_along_axis, scale_perpendicular)`.
@@ -126,8 +126,8 @@ impl BumpState {
             return (1.0, 1.0);
         }
         let t = self.timer / SQUASH_TIME;
-        let compression = (t * std::f32::consts::PI).sin() * 0.08 * self.intensity;
-        (1.0 - compression, 1.0 + compression * 0.4)
+        let compression = (t * std::f32::consts::PI).sin() * 0.07 * self.intensity;
+        (1.0 - compression, 1.0 + compression * 0.35)
     }
 
     /// Returns true if headlights / hazard lights are currently lit in the blink cycle.
@@ -185,6 +185,18 @@ impl Vehicle {
             is_player,
             drag_offset: 0.0,
             bump_state: None,
+        }
+    }
+
+    /// Returns the physical inertia mass of the vehicle based on its length and type.
+    /// The longer the vehicle is, the more inertia and mass it possesses.
+    pub fn mass(&self) -> f32 {
+        match self.length {
+            1 => 0.8,
+            2 => 1.0,
+            3 => 1.8,
+            4 => 2.7,
+            len => len as f32 * 0.7,
         }
     }
 

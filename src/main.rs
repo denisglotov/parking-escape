@@ -150,8 +150,16 @@ async fn main() {
                         }
                     }
 
-                    // Update board physics, vehicle bump timers, and animations
-                    current_board.update(dt);
+                    // Update board physics, vehicle inertia coasting, and animations
+                    if let Some(trigger) = current_board.update(dt) {
+                        if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
+                            sound.play(SoundTrigger::Bump);
+                        }
+                        sound.play(trigger);
+                        if trigger == SoundTrigger::Win {
+                            sound.play(SoundTrigger::ExitDrive);
+                        }
+                    }
 
                     // Check win transition to victory modal
                     if current_board.is_won && current_board.exit_animation_progress >= 0.85 {
