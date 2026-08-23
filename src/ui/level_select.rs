@@ -10,11 +10,30 @@ pub enum LevelSelectAction {
     BackToMenu,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct LevelSelectState {
+    pub scroll_offset: f32,
+    pub scroll_velocity: f32,
+    pub touch_start_pos: Option<(f32, f32)>,
+    pub touch_last_y: f32,
+    pub has_dragged: bool,
+}
+
+impl LevelSelectState {
+    pub fn reset(&mut self) {
+        self.scroll_offset = 0.0;
+        self.scroll_velocity = 0.0;
+        self.touch_start_pos = None;
+        self.touch_last_y = 0.0;
+        self.has_dragged = false;
+    }
+}
+
 pub fn render_level_select(
     repo: &LevelRepository,
     records: &HashMap<(PackKey, usize), LevelRecord>,
     active_pack: &mut PackKey,
-    scroll_offset: &mut f32,
+    state: &mut LevelSelectState,
     textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
@@ -22,7 +41,10 @@ pub fn render_level_select(
     let mut action = LevelSelectAction::None;
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
+    let is_mouse_held = is_mouse_button_down(MouseButton::Left);
+    let is_mouse_released = is_mouse_button_released(MouseButton::Left);
     let metrics = UiMetrics::new(screen_w, screen_h);
+    let dt = get_frame_time();
 
     // Layout metrics calculation
     let header_h = metrics.hud_height;
@@ -40,12 +62,6 @@ pub fn render_level_select(
     let grid_top = diff_y + diff_h + metrics.s(14.0);
     let grid_bottom = screen_h - metrics.s(10.0);
     let viewport_h = grid_bottom - grid_top;
-
-    // Handle mouse wheel / trackpad scrolling
-    let (_, wheel_y) = mouse_wheel();
-    if wheel_y.abs() > 0.001 {
-        *scroll_offset -= wheel_y * metrics.s(60.0);
-    }
 
     let levels = repo.get_pack(*active_pack);
     let cols: usize = if screen_w > metrics.s(720.0) { 4 } else { 3 };
@@ -66,7 +82,70 @@ pub fn render_level_select(
     };
 
     let max_scroll = (total_content_h - viewport_h + metrics.s(20.0)).max(0.0);
-    *scroll_offset = scroll_offset.clamp(0.0, max_scroll);
+
+    // ==========================================
+    // Touch Drag & Scroll Physics Processing
+    // ==========================================
+    let mut tap_released_at: Option<(f32, f32)> = None;
+
+    // 1. Mouse wheel / trackpad scroll
+    let (_, wheel_y) = mouse_wheel();
+    if wheel_y.abs() > 0.001 {
+        state.scroll_offset -= wheel_y * metrics.s(60.0);
+        state.scroll_velocity = 0.0;
+    }
+
+    // 2. Touch / Mouse drag gesture in grid viewport
+    let in_grid_viewport = mouse_pos.1 >= grid_top && mouse_pos.1 <= grid_bottom;
+    if is_mouse_down && in_grid_viewport {
+        state.touch_start_pos = Some((mouse_pos.0, mouse_pos.1));
+        state.touch_last_y = mouse_pos.1;
+        state.has_dragged = false;
+        state.scroll_velocity = 0.0;
+    } else if is_mouse_held {
+        if let Some((_, start_y)) = state.touch_start_pos {
+            let dy = mouse_pos.1 - state.touch_last_y;
+            let total_dist = (mouse_pos.1 - start_y).abs();
+            if total_dist > metrics.s(8.0) {
+                state.has_dragged = true;
+            }
+            if state.has_dragged {
+                state.scroll_offset -= dy;
+                if dt > 0.0001 {
+                    let instant_v = -dy / dt;
+                    state.scroll_velocity = state.scroll_velocity * 0.4 + instant_v * 0.6;
+                }
+            }
+            state.touch_last_y = mouse_pos.1;
+        }
+    } else if is_mouse_released {
+        if let Some(start_pos) = state.touch_start_pos.take() {
+            if !state.has_dragged && in_grid_viewport {
+                let dx = mouse_pos.0 - start_pos.0;
+                let dy = mouse_pos.1 - start_pos.1;
+                let dist = (dx * dx + dy * dy).sqrt();
+                if dist <= metrics.s(12.0) {
+                    tap_released_at = Some(start_pos);
+                }
+            }
+        }
+        state.scroll_velocity = state
+            .scroll_velocity
+            .clamp(-metrics.s(3000.0), metrics.s(3000.0));
+    } else {
+        // Inertia coasting
+        if state.scroll_velocity.abs() > 10.0 {
+            state.scroll_offset += state.scroll_velocity * dt;
+            state.scroll_velocity *= (0.92f32).powf(dt * 60.0);
+        } else {
+            state.scroll_velocity = 0.0;
+        }
+    }
+
+    state.scroll_offset = state.scroll_offset.clamp(0.0, max_scroll);
+    if state.scroll_offset == 0.0 || state.scroll_offset == max_scroll {
+        state.scroll_velocity = 0.0;
+    }
 
     // ==========================================
     // 1. Render Level Grid Cards (Underneath top/bottom masks)
@@ -88,7 +167,7 @@ pub fn render_level_select(
             let row = idx / cols;
             let col = idx % cols;
             let cx = grid_start_x + col as f32 * (card_w + spacing);
-            let cy = grid_top + row as f32 * (card_h + spacing) - *scroll_offset;
+            let cy = grid_top + row as f32 * (card_h + spacing) - state.scroll_offset;
 
             // Only skip cards that are completely off-screen beyond the top header or bottom edge
             if cy + card_h < 0.0 || cy > screen_h + metrics.s(50.0) {
@@ -99,9 +178,9 @@ pub fn render_level_select(
             let is_completed = record.is_some_and(|r| r.completed);
             let stars = record.map_or(0, |r| r.stars);
 
+            let card_rect = Rect::new(cx, cy, card_w, card_h);
             let in_viewport = mouse_pos.1 >= grid_top && mouse_pos.1 <= grid_bottom;
-            let hovered = in_viewport
-                && Rect::new(cx, cy, card_w, card_h).contains(vec2(mouse_pos.0, mouse_pos.1));
+            let hovered = in_viewport && card_rect.contains(vec2(mouse_pos.0, mouse_pos.1));
 
             let bg = if hovered {
                 THEME.surface_hover
@@ -142,8 +221,11 @@ pub fn render_level_select(
                 star_spacing,
             );
 
-            if hovered && is_mouse_down {
-                action = LevelSelectAction::SelectLevel(*active_pack, idx);
+            // Only select level if user tapped down and released inside this specific card
+            if let Some(tap_pos) = tap_released_at {
+                if card_rect.contains(vec2(tap_pos.0, tap_pos.1)) {
+                    action = LevelSelectAction::SelectLevel(*active_pack, idx);
+                }
             }
         }
 
@@ -153,7 +235,7 @@ pub fn render_level_select(
             let scrollbar_x = screen_w - metrics.s(8.0);
             let thumb_ratio = (viewport_h / total_content_h).clamp(0.1, 1.0);
             let thumb_h = viewport_h * thumb_ratio;
-            let scroll_ratio = *scroll_offset / max_scroll;
+            let scroll_ratio = state.scroll_offset / max_scroll;
             let thumb_y = grid_top + scroll_ratio * (viewport_h - thumb_h);
 
             draw_rectangle(
@@ -228,7 +310,7 @@ pub fn render_level_select(
         ) && active_pack.size != *size
         {
             active_pack.size = *size;
-            *scroll_offset = 0.0;
+            state.reset();
         }
     }
 
@@ -259,7 +341,7 @@ pub fn render_level_select(
         ) && active_pack.difficulty != *diff
         {
             active_pack.difficulty = *diff;
-            *scroll_offset = 0.0;
+            state.reset();
         }
     }
 

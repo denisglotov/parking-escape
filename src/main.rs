@@ -8,7 +8,7 @@ use game::Board;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use ui::hud::{render_hud, HudAction};
-use ui::level_select::{render_level_select, LevelSelectAction};
+use ui::level_select::{render_level_select, LevelSelectAction, LevelSelectState};
 use ui::menu::{render_main_menu, MenuAction};
 use ui::renderer::render_board;
 use ui::win_modal::{render_win_modal, WinModalAction};
@@ -43,7 +43,7 @@ async fn main() {
     let mut records: HashMap<(PackKey, usize), LevelRecord> = HashMap::new();
     let mut current_pack = PackKey::new(FieldSize::Small6x6, DifficultyTier::Relaxed);
     let mut current_level_idx = 0;
-    let mut level_select_scroll = 0.0f32;
+    let mut level_select_state = LevelSelectState::default();
     let mut current_board: Board = repo
         .get_level(current_pack, current_level_idx)
         .expect("Initial level missing")
@@ -71,6 +71,7 @@ async fn main() {
                     }
                     MenuAction::SelectLevels => {
                         sound.play(SoundTrigger::ButtonClick, game::Theme::City);
+                        level_select_state.reset();
                         scene = AppScene::LevelSelect;
                     }
                     MenuAction::ToggleSound => {
@@ -85,7 +86,7 @@ async fn main() {
                     &repo,
                     &records,
                     &mut current_pack,
-                    &mut level_select_scroll,
+                    &mut level_select_state,
                     &textures,
                     screen_w,
                     screen_h,
@@ -213,6 +214,7 @@ async fn main() {
                 ) {
                     HudAction::BackToMenu => {
                         sound.play(SoundTrigger::ButtonClick, current_board.theme);
+                        level_select_state.reset();
                         scene = AppScene::LevelSelect;
                     }
                     HudAction::Undo => {
@@ -262,6 +264,7 @@ async fn main() {
                         }
                         WinModalAction::LevelSelect => {
                             sound.play(SoundTrigger::ButtonClick, current_board.theme);
+                            level_select_state.reset();
                             scene = AppScene::LevelSelect;
                         }
                         WinModalAction::None => {}
