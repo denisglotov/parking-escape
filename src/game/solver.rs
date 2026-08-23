@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use super::board::ExitPosition;
+use super::obstacle::Obstacle;
 use super::vehicle::{Orientation, Vehicle};
 use std::collections::{HashSet, VecDeque};
 
@@ -9,7 +10,13 @@ use std::collections::{HashSet, VecDeque};
 pub struct BoardState(Vec<(i32, i32)>);
 
 /// Solves a parking puzzle using Breadth-First Search to guarantee the optimal minimum moves.
-pub fn solve(width: i32, height: i32, exit: ExitPosition, vehicles: &[Vehicle]) -> Option<u32> {
+pub fn solve(
+    width: i32,
+    height: i32,
+    exit: ExitPosition,
+    vehicles: &[Vehicle],
+    obstacles: &[Obstacle],
+) -> Option<u32> {
     let player_idx = vehicles.iter().position(|v| v.is_player)?;
     let initial_state = BoardState(vehicles.iter().map(|v| (v.x, v.y)).collect());
 
@@ -19,6 +26,8 @@ pub fn solve(width: i32, height: i32, exit: ExitPosition, vehicles: &[Vehicle]) 
     queue.push_back((initial_state.clone(), 0));
     visited.insert(initial_state);
 
+    let obstacle_cells: HashSet<(i32, i32)> = obstacles.iter().flat_map(|o| o.cells()).collect();
+
     while let Some((state, moves)) = queue.pop_front() {
         let (px, py) = state.0[player_idx];
         let player = &vehicles[player_idx];
@@ -27,7 +36,7 @@ pub fn solve(width: i32, height: i32, exit: ExitPosition, vehicles: &[Vehicle]) 
             return Some(moves);
         }
 
-        for next_state in generate_next_states(width, height, &state, vehicles) {
+        for next_state in generate_next_states(width, height, &state, vehicles, &obstacle_cells) {
             if !visited.contains(&next_state) {
                 visited.insert(next_state.clone());
                 queue.push_back((next_state, moves + 1));
@@ -43,12 +52,14 @@ fn generate_next_states(
     height: i32,
     current: &BoardState,
     vehicles: &[Vehicle],
+    obstacle_cells: &HashSet<(i32, i32)>,
 ) -> Vec<BoardState> {
     let occupied: HashSet<(i32, i32)> = current
         .0
         .iter()
         .zip(vehicles)
         .flat_map(|(&(vx, vy), veh)| veh.orientation.cells(vx, vy, veh.length))
+        .chain(obstacle_cells.iter().copied())
         .collect();
 
     current
@@ -128,7 +139,6 @@ mod tests {
     fn test_simple_solver() {
         let vehicles = vec![
             Vehicle::new(
-                "p",
                 VehicleKind::PlayerRed,
                 1,
                 2,
@@ -137,7 +147,6 @@ mod tests {
                 true,
             ),
             Vehicle::new(
-                "c1",
                 VehicleKind::CarSedanBlue,
                 3,
                 1,
@@ -146,7 +155,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "t1",
                 VehicleKind::TruckDelivery,
                 4,
                 2,
@@ -162,8 +170,42 @@ mod tests {
             col: 0,
         };
 
-        let result = solve(6, 6, exit, &vehicles);
+        let result = solve(6, 6, exit, &vehicles, &[]);
         assert!(result.is_some(), "Puzzle should be solvable");
         assert!(result.unwrap() >= 2);
+    }
+
+    #[test]
+    fn test_solver_with_obstacles() {
+        let vehicles = vec![
+            Vehicle::new(
+                VehicleKind::PlayerRed,
+                0,
+                2,
+                2,
+                Orientation::Horizontal,
+                true,
+            ),
+            Vehicle::new(
+                VehicleKind::CarSedanBlue,
+                3,
+                0,
+                2,
+                Orientation::Vertical,
+                false,
+            ),
+        ];
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 2,
+            col: 0,
+        };
+
+        // Obstacle at (3, 2) blocks the exit path for player unless c1 moves
+        let obstacles = vec![Obstacle::rock_1x1(4, 0)];
+
+        let result = solve(6, 6, exit, &vehicles, &obstacles);
+        assert!(result.is_some(), "Puzzle with obstacle should be solvable");
     }
 }

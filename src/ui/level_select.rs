@@ -1,19 +1,39 @@
 use super::{draw_ui_button, ButtonStyle, TextureStore, UiMetrics, THEME};
-use crate::game::level::{LevelRecord, LevelRepository, PackType};
+use crate::game::level::{DifficultyTier, FieldSize, LevelRecord, LevelRepository, PackKey};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LevelSelectAction {
     None,
-    SelectLevel(PackType, usize),
+    SelectLevel(PackKey, usize),
     BackToMenu,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LevelSelectState {
+    pub scroll_offset: f32,
+    pub scroll_velocity: f32,
+    pub touch_start_pos: Option<(f32, f32)>,
+    pub touch_last_y: f32,
+    pub has_dragged: bool,
+}
+
+impl LevelSelectState {
+    pub fn reset(&mut self) {
+        self.scroll_offset = 0.0;
+        self.scroll_velocity = 0.0;
+        self.touch_start_pos = None;
+        self.touch_last_y = 0.0;
+        self.has_dragged = false;
+    }
 }
 
 pub fn render_level_select(
     repo: &LevelRepository,
-    records: &HashMap<(PackType, usize), LevelRecord>,
-    active_pack: &mut PackType,
+    records: &HashMap<(PackKey, usize), LevelRecord>,
+    active_pack: &mut PackKey,
+    state: &mut LevelSelectState,
     textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
@@ -21,10 +41,311 @@ pub fn render_level_select(
     let mut action = LevelSelectAction::None;
     let mouse_pos = mouse_position();
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
+    let is_mouse_held = is_mouse_button_down(MouseButton::Left);
+    let is_mouse_released = is_mouse_button_released(MouseButton::Left);
     let metrics = UiMetrics::new(screen_w, screen_h);
+    let dt = get_frame_time();
 
-    // 1. Header Bar
+    // Layout metrics calculation
     let header_h = metrics.hud_height;
+    let tab_gap = metrics.s(8.0);
+    let tab_padding = metrics.s(16.0);
+    let tab_w = ((screen_w - tab_padding * 2.0 - tab_gap * 2.0) / 3.0).min(metrics.s(220.0));
+    let tab_h = metrics.s(42.0);
+    let tab_y = header_h + metrics.s(12.0);
+    let total_tabs_w = tab_w * 3.0 + tab_gap * 2.0;
+    let tab_start_x = (screen_w - total_tabs_w) / 2.0;
+
+    let diff_h = metrics.s(38.0);
+    let diff_y = tab_y + tab_h + metrics.s(8.0);
+
+    let grid_top = diff_y + diff_h + metrics.s(14.0);
+    let grid_bottom = screen_h - metrics.s(10.0);
+    let viewport_h = grid_bottom - grid_top;
+
+    let levels = repo.get_pack(*active_pack);
+    let cols: usize = if screen_w > metrics.s(720.0) { 4 } else { 3 };
+    let spacing = metrics.s(14.0);
+    let grid_side_padding = metrics.s(16.0);
+    let total_spacing = spacing * (cols - 1) as f32;
+    let available_grid_w = screen_w - grid_side_padding * 2.0;
+    let card_w = ((available_grid_w - total_spacing) / cols as f32).min(metrics.s(180.0));
+    let card_h = (card_w * 0.90).round();
+    let actual_grid_w = cols as f32 * card_w + total_spacing;
+    let grid_start_x = (screen_w - actual_grid_w) / 2.0;
+
+    let total_rows = levels.len().div_ceil(cols);
+    let total_content_h = if total_rows > 0 {
+        total_rows as f32 * card_h + (total_rows - 1) as f32 * spacing
+    } else {
+        0.0
+    };
+
+    let max_scroll = (total_content_h - viewport_h + metrics.s(20.0)).max(0.0);
+
+    // ==========================================
+    // Touch Drag & Scroll Physics Processing
+    // ==========================================
+    let mut tap_released_at: Option<(f32, f32)> = None;
+
+    // 1. Mouse wheel / trackpad scroll
+    let (_, wheel_y) = mouse_wheel();
+    if wheel_y.abs() > 0.001 {
+        state.scroll_offset -= wheel_y * metrics.s(60.0);
+        state.scroll_velocity = 0.0;
+    }
+
+    // 2. Touch / Mouse drag gesture in grid viewport
+    let in_grid_viewport = mouse_pos.1 >= grid_top && mouse_pos.1 <= grid_bottom;
+    if is_mouse_down && in_grid_viewport {
+        state.touch_start_pos = Some((mouse_pos.0, mouse_pos.1));
+        state.touch_last_y = mouse_pos.1;
+        state.has_dragged = false;
+        state.scroll_velocity = 0.0;
+    } else if is_mouse_held {
+        if let Some((_, start_y)) = state.touch_start_pos {
+            let dy = mouse_pos.1 - state.touch_last_y;
+            let total_dist = (mouse_pos.1 - start_y).abs();
+            if total_dist > metrics.s(8.0) {
+                state.has_dragged = true;
+            }
+            if state.has_dragged {
+                state.scroll_offset -= dy;
+                if dt > 0.0001 {
+                    let instant_v = -dy / dt;
+                    state.scroll_velocity = state.scroll_velocity * 0.4 + instant_v * 0.6;
+                }
+            }
+            state.touch_last_y = mouse_pos.1;
+        }
+    } else if is_mouse_released {
+        if let Some(start_pos) = state.touch_start_pos.take() {
+            if !state.has_dragged && in_grid_viewport {
+                let dx = mouse_pos.0 - start_pos.0;
+                let dy = mouse_pos.1 - start_pos.1;
+                let dist = (dx * dx + dy * dy).sqrt();
+                if dist <= metrics.s(12.0) {
+                    tap_released_at = Some(start_pos);
+                }
+            }
+        }
+        state.scroll_velocity = state
+            .scroll_velocity
+            .clamp(-metrics.s(3000.0), metrics.s(3000.0));
+    } else {
+        // Inertia coasting
+        if state.scroll_velocity.abs() > 10.0 {
+            state.scroll_offset += state.scroll_velocity * dt;
+            state.scroll_velocity *= (0.92f32).powf(dt * 60.0);
+        } else {
+            state.scroll_velocity = 0.0;
+        }
+    }
+
+    state.scroll_offset = state.scroll_offset.clamp(0.0, max_scroll);
+    if state.scroll_offset == 0.0 || state.scroll_offset == max_scroll {
+        state.scroll_velocity = 0.0;
+    }
+
+    // ==========================================
+    // 1. Render Level Grid Cards (Underneath top/bottom masks)
+    // ==========================================
+    if levels.is_empty() {
+        textures.draw_text_centered(
+            "Generating levels for this difficulty...",
+            screen_w / 2.0,
+            grid_top + viewport_h / 2.0,
+            metrics.s(20.0),
+            THEME.text_secondary,
+        );
+    } else {
+        let card_num_font = metrics.s(32.0);
+        let star_size = (card_w * 0.20).clamp(metrics.s(16.0), metrics.s(28.0));
+        let star_spacing = metrics.s(4.0);
+
+        for (idx, lvl) in levels.iter().enumerate() {
+            let row = idx / cols;
+            let col = idx % cols;
+            let cx = grid_start_x + col as f32 * (card_w + spacing);
+            let cy = grid_top + row as f32 * (card_h + spacing) - state.scroll_offset;
+
+            // Only skip cards that are completely off-screen beyond the top header or bottom edge
+            if cy + card_h < 0.0 || cy > screen_h + metrics.s(50.0) {
+                continue;
+            }
+
+            let record = records.get(&(*active_pack, idx));
+            let is_completed = record.is_some_and(|r| r.completed);
+            let stars = record.map_or(0, |r| r.stars);
+
+            let card_rect = Rect::new(cx, cy, card_w, card_h);
+            let in_viewport = mouse_pos.1 >= grid_top && mouse_pos.1 <= grid_bottom;
+            let hovered = in_viewport && card_rect.contains(vec2(mouse_pos.0, mouse_pos.1));
+
+            let bg = if hovered {
+                THEME.surface_hover
+            } else if is_completed {
+                THEME.surface
+            } else {
+                THEME.card_bg
+            };
+
+            draw_rectangle(cx, cy, card_w, card_h, bg);
+            let border_col = if hovered {
+                THEME.accent_gold
+            } else if is_completed {
+                THEME.accent_green
+            } else {
+                Color::new(0.25, 0.3, 0.4, 0.5)
+            };
+            let card_border = (2.0 * metrics.scale).max(1.5);
+            draw_rectangle_lines(cx, cy, card_w, card_h, card_border, border_col);
+
+            // Level Number
+            let num_str = format!("{}", lvl.id);
+            textures.draw_text_centered(
+                &num_str,
+                cx + card_w / 2.0,
+                cy + card_h * 0.42,
+                card_num_font,
+                THEME.text_primary,
+            );
+
+            // Star rating
+            textures.draw_star_row(
+                cx + card_w / 2.0,
+                cy + card_h * 0.74,
+                stars,
+                3,
+                star_size,
+                star_spacing,
+            );
+
+            // Only select level if user tapped down and released inside this specific card
+            if let Some(tap_pos) = tap_released_at {
+                if card_rect.contains(vec2(tap_pos.0, tap_pos.1)) {
+                    action = LevelSelectAction::SelectLevel(*active_pack, idx);
+                }
+            }
+        }
+
+        // Scrollbar indicator
+        if max_scroll > 0.0 {
+            let scrollbar_w = metrics.s(4.0);
+            let scrollbar_x = screen_w - metrics.s(8.0);
+            let thumb_ratio = (viewport_h / total_content_h).clamp(0.1, 1.0);
+            let thumb_h = viewport_h * thumb_ratio;
+            let scroll_ratio = state.scroll_offset / max_scroll;
+            let thumb_y = grid_top + scroll_ratio * (viewport_h - thumb_h);
+
+            draw_rectangle(
+                scrollbar_x,
+                thumb_y,
+                scrollbar_w,
+                thumb_h,
+                Color::new(0.4, 0.45, 0.55, 0.5),
+            );
+        }
+    }
+
+    // ==========================================
+    // 2. Render Bottom Viewport Margin Mask
+    // ==========================================
+    if grid_bottom < screen_h {
+        draw_rectangle(
+            0.0,
+            grid_bottom,
+            screen_w,
+            screen_h - grid_bottom,
+            THEME.bg_dark,
+        );
+        draw_line(
+            0.0,
+            grid_bottom,
+            screen_w,
+            grid_bottom,
+            (1.0 * metrics.scale).max(1.0),
+            Color::new(0.2, 0.24, 0.32, 0.4),
+        );
+    }
+
+    // ==========================================
+    // 3. Render Top Fixed Control Panel (Header & Tabs over scrolling grid)
+    // ==========================================
+    // Solid background mask for tab area
+    draw_rectangle(0.0, 0.0, screen_w, grid_top, THEME.bg_dark);
+    draw_line(
+        0.0,
+        grid_top,
+        screen_w,
+        grid_top,
+        (1.0 * metrics.scale).max(1.0),
+        Color::new(0.2, 0.24, 0.32, 0.6),
+    );
+
+    // Row 1: Field Size Tabs (Small 6x6, Medium 8x8, Big 10x10)
+    let size_tabs = FieldSize::ALL.map(|s| (s, s.label()));
+    for (i, (size, label)) in size_tabs.iter().enumerate() {
+        let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
+        let is_selected = active_pack.size == *size;
+
+        let bg_col = if is_selected {
+            THEME.accent_blue
+        } else {
+            THEME.card_bg
+        };
+
+        if draw_ui_button(
+            textures,
+            Rect::new(tx, tab_y, tab_w, tab_h),
+            label,
+            ButtonStyle {
+                bg_color: bg_col,
+                font_size: metrics.s(17.0),
+                border_width: (1.5 * metrics.scale).max(1.0),
+                ..Default::default()
+            },
+            mouse_pos,
+            is_mouse_down,
+        ) && active_pack.size != *size
+        {
+            active_pack.size = *size;
+            state.reset();
+        }
+    }
+
+    // Row 2: Difficulty Tier Tabs (Relaxed, Challenging, Hard)
+    let diff_tabs = DifficultyTier::ALL.map(|d| (d, d.label()));
+    for (i, (diff, label)) in diff_tabs.iter().enumerate() {
+        let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
+        let is_selected = active_pack.difficulty == *diff;
+
+        let bg_col = if is_selected {
+            Color::new(0.20, 0.45, 0.85, 1.0)
+        } else {
+            THEME.surface
+        };
+
+        if draw_ui_button(
+            textures,
+            Rect::new(tx, diff_y, tab_w, diff_h),
+            label,
+            ButtonStyle {
+                bg_color: bg_col,
+                font_size: metrics.s(16.0),
+                border_width: (1.5 * metrics.scale).max(1.0),
+                ..Default::default()
+            },
+            mouse_pos,
+            is_mouse_down,
+        ) && active_pack.difficulty != *diff
+        {
+            active_pack.difficulty = *diff;
+            state.reset();
+        }
+    }
+
+    // Header Bar
     draw_rectangle(0.0, 0.0, screen_w, header_h, THEME.surface);
     let border_thick = (1.5 * metrics.scale).max(1.0);
     draw_line(
@@ -108,125 +429,6 @@ pub fn render_level_select(
         title_font_size,
         THEME.text_primary,
     );
-
-    // 2. Pack Tabs (6x6 Beginner, 8x8 Advanced, 10x10 Expert)
-    let tabs = [
-        (PackType::Grid6x6, "6x6 Beginner"),
-        (PackType::Grid8x8, "8x8 Advanced"),
-        (PackType::Grid10x10, "10x10 Expert"),
-    ];
-
-    let tab_gap = metrics.s(8.0);
-    let tab_padding = metrics.s(16.0);
-    let tab_w = ((screen_w - tab_padding * 2.0 - tab_gap * 2.0) / 3.0).min(metrics.s(220.0));
-    let tab_h = metrics.s(48.0);
-    let tab_y = header_h + metrics.s(16.0);
-    let total_tabs_w = tab_w * 3.0 + tab_gap * 2.0;
-    let tab_start_x = (screen_w - total_tabs_w) / 2.0;
-
-    for (i, (pack, label)) in tabs.iter().enumerate() {
-        let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
-        let is_selected = *active_pack == *pack;
-
-        let bg_col = if is_selected {
-            THEME.accent_blue
-        } else {
-            THEME.card_bg
-        };
-
-        if draw_ui_button(
-            textures,
-            Rect::new(tx, tab_y, tab_w, tab_h),
-            label,
-            ButtonStyle {
-                bg_color: bg_col,
-                font_size: metrics.s(18.0),
-                border_width: (1.5 * metrics.scale).max(1.0),
-                ..Default::default()
-            },
-            mouse_pos,
-            is_mouse_down,
-        ) {
-            *active_pack = *pack;
-        }
-    }
-
-    // 3. Level Grid Cards
-    let levels = repo.get_pack(*active_pack);
-    let grid_y = tab_y + tab_h + metrics.s(24.0);
-    let cols: usize = if screen_w > metrics.s(720.0) { 4 } else { 3 };
-    let spacing = metrics.s(16.0);
-    let grid_side_padding = metrics.s(20.0);
-    let total_spacing = spacing * (cols - 1) as f32;
-    let available_grid_w = screen_w - grid_side_padding * 2.0;
-    let card_w = ((available_grid_w - total_spacing) / cols as f32).min(metrics.s(180.0));
-    let card_h = (card_w * 0.90).round();
-    let actual_grid_w = cols as f32 * card_w + total_spacing;
-    let grid_start_x = (screen_w - actual_grid_w) / 2.0;
-
-    let card_num_font = metrics.s(34.0);
-    let star_size = (card_w * 0.20).clamp(metrics.s(18.0), metrics.s(30.0));
-    let star_spacing = metrics.s(4.0);
-
-    for (idx, lvl) in levels.iter().enumerate() {
-        let row = idx / cols;
-        let col = idx % cols;
-        let cx = grid_start_x + col as f32 * (card_w + spacing);
-        let cy = grid_y + row as f32 * (card_h + spacing);
-
-        if cy + card_h > screen_h - metrics.s(16.0) {
-            break;
-        }
-
-        let record = records.get(&(*active_pack, idx));
-        let is_completed = record.is_some_and(|r| r.completed);
-        let stars = record.map_or(0, |r| r.stars);
-
-        let hovered = Rect::new(cx, cy, card_w, card_h).contains(vec2(mouse_pos.0, mouse_pos.1));
-
-        let bg = if hovered {
-            THEME.surface_hover
-        } else if is_completed {
-            THEME.surface
-        } else {
-            THEME.card_bg
-        };
-
-        draw_rectangle(cx, cy, card_w, card_h, bg);
-        let border_col = if hovered {
-            THEME.accent_gold
-        } else if is_completed {
-            THEME.accent_green
-        } else {
-            Color::new(0.25, 0.3, 0.4, 0.5)
-        };
-        let card_border = (2.0 * metrics.scale).max(1.5);
-        draw_rectangle_lines(cx, cy, card_w, card_h, card_border, border_col);
-
-        // Level Number (Prominent & Clear)
-        let num_str = format!("{}", lvl.id);
-        textures.draw_text_centered(
-            &num_str,
-            cx + card_w / 2.0,
-            cy + card_h * 0.42,
-            card_num_font,
-            THEME.text_primary,
-        );
-
-        // Star rating
-        textures.draw_star_row(
-            cx + card_w / 2.0,
-            cy + card_h * 0.74,
-            stars,
-            3,
-            star_size,
-            star_spacing,
-        );
-
-        if hovered && is_mouse_down {
-            action = LevelSelectAction::SelectLevel(*active_pack, idx);
-        }
-    }
 
     action
 }

@@ -173,6 +173,29 @@ impl TextureStore {
             "../../assets/themes/marine/environment/exit_gate.png"
         );
 
+        // Obstacle textures
+        load_tex!(
+            "marine_buoy",
+            "../../assets/themes/marine/obstacles/buoy.png"
+        );
+        load_tex!(
+            "marine_buoy_green",
+            "../../assets/themes/marine/obstacles/buoy_green.png"
+        );
+        load_tex!(
+            "marine_rock",
+            "../../assets/themes/marine/obstacles/rock.png"
+        );
+        load_tex!("city_rock", "../../assets/themes/city/obstacles/rock.png");
+        load_tex!(
+            "city_pillar",
+            "../../assets/themes/city/obstacles/pillar.png"
+        );
+        load_tex!(
+            "city_barrier",
+            "../../assets/themes/city/obstacles/barrier.png"
+        );
+
         // UI icon assets
         load_tex!("badge_parking", "../../assets/ui/badge_parking.png");
         load_tex!("star_gold", "../../assets/ui/star_gold.png");

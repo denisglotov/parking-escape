@@ -6,7 +6,7 @@ Selects and filters puzzle difficulty based on Minimum Optimal Moves (par moves)
 """
 
 import argparse
-from collections import deque
+from collections import defaultdict, deque
 import json
 import os
 import random
@@ -20,17 +20,12 @@ VEHICLE_KINDS_BY_LENGTH = {
     4: ["semi_truck", "bus_transit"],
 }
 
-DEFAULT_DIFFICULTIES = {
-    "beginner": (4, 7),
-    "intermediate": (8, 12),
-    "expert": (12, 25),
-}
+OBSTACLE_KINDS = ["rock", "pillar", "barrier"]
 
 
 class Vehicle:
     def __init__(
         self,
-        vid: str,
         kind: str,
         x: int,
         y: int,
@@ -38,7 +33,6 @@ class Vehicle:
         orientation: str,  # 'horizontal' or 'vertical'
         is_player: bool = False,
     ):
-        self.id = vid
         self.kind = kind
         self.x = x
         self.y = y
@@ -52,15 +46,50 @@ class Vehicle:
         return [(self.x, self.y + i) for i in range(self.length)]
 
     def to_dict(self) -> dict:
-        return {
-            "id": self.id,
+        d = {
             "kind": self.kind,
             "x": self.x,
             "y": self.y,
             "length": self.length,
             "orientation": self.orientation,
-            "is_player": self.is_player,
         }
+        if self.is_player:
+            d["is_player"] = True
+        return d
+
+
+class Obstacle:
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int = 1,
+        height: int = 1,
+        kind: Optional[str] = None,
+    ):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.kind = kind
+
+    def cells(self) -> List[Tuple[int, int]]:
+        return [
+            (self.x + dx, self.y + dy)
+            for dy in range(self.height)
+            for dx in range(self.width)
+        ]
+
+    def to_dict(self) -> dict:
+        d = {
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height,
+        }
+        if self.kind:
+            d["kind"] = self.kind
+        return d
 
 
 def solve_puzzle(
@@ -68,6 +97,7 @@ def solve_puzzle(
     height: int,
     exit_row: int,
     vehicles: List[Vehicle],
+    obstacles: Optional[List[Obstacle]] = None,
     max_states: int = 15000,
 ) -> Optional[int]:
     """
@@ -86,8 +116,13 @@ def solve_puzzle(
 
     v_lens = [v.length for v in vehicles]
     v_orients = [v.orientation for v in vehicles]
-    num_v = len(vehicles)
     plen = v_lens[player_idx]
+
+    obstacle_cells: Set[Tuple[int, int]] = set()
+    if obstacles:
+        for obs in obstacles:
+            for cell in obs.cells():
+                obstacle_cells.add(cell)
 
     while queue:
         state, moves = queue.popleft()
@@ -101,7 +136,8 @@ def solve_puzzle(
             continue
 
         # Spatial hash of occupied cells
-        grid: Dict[Tuple[int, int], int] = {}
+        grid: Dict[Tuple[int, int], int] = {
+            cell: -1 for cell in obstacle_cells}
         for i, (vx, vy) in enumerate(state):
             vl = v_lens[i]
             vo = v_orients[i]
@@ -182,16 +218,12 @@ class ConstraintGenerator:
         width: int,
         height: int,
         exit_row: int,
-        min_moves: int,
-        max_moves: int,
         min_vehicles: Optional[int] = None,
         max_vehicles: Optional[int] = None,
     ):
         self.width = width
         self.height = height
         self.exit_row = exit_row
-        self.min_moves = min_moves
-        self.max_moves = max_moves
 
         if width <= 6:
             self.min_vehicles = min_vehicles or 4
@@ -242,10 +274,16 @@ class ConstraintGenerator:
         kinds = VEHICLE_KINDS_BY_LENGTH.get(length, ["car_sedan_blue"])
         return random.choice(kinds)
 
-    def generate_single_attempt(self) -> Optional[Tuple[List[Vehicle], int]]:
+    def generate_single_attempt(
+        self,
+    ) -> Optional[Tuple[List[Vehicle], List[Obstacle], int]]:
         occupied: Set[Tuple[int, int]] = set()
         vehicles: List[Vehicle] = []
-        veh_counter = 1
+        obstacles: List[Obstacle] = []
+
+        # Randomize blocker count and vehicle density across the spectrum
+        num_blockers = random.choice([1, 2]) if self.width >= 6 else 1
+        veh_range = (self.min_vehicles, self.max_vehicles)
 
         # -------------------------------------------------------------
         # Step 1: Constraint - Place Player Vehicle (Length 2, Horizontal)
@@ -253,7 +291,6 @@ class ConstraintGenerator:
         max_player_x = max(0, self.width - 4)
         player_x = random.randint(0, max_player_x)
         player = Vehicle(
-            vid="player",
             kind="player_red",
             x=player_x,
             y=self.exit_row,
@@ -266,28 +303,64 @@ class ConstraintGenerator:
         vehicles.append(player)
 
         # -------------------------------------------------------------
+        # Step 1b: Static Obstacles Placement (All board sizes)
+        # -------------------------------------------------------------
+        if self.width <= 6:
+            num_obstacles = random.choice([0, 1])
+        elif self.width <= 8:
+            num_obstacles = random.choice([0, 1, 2])
+        else:
+            num_obstacles = random.choice([1, 2, 3])
+
+        for _ in range(num_obstacles):
+            obs_attempts = 0
+            while obs_attempts < 20:
+                obs_attempts += 1
+                ox = random.randint(0, self.width - 1)
+                oy = random.randint(0, self.height - 1)
+
+                # Never place obstacles on the exit row
+                if oy == self.exit_row:
+                    continue
+
+                if self._is_free(occupied, ox, oy, 1, "horizontal"):
+                    kind = random.choice(OBSTACLE_KINDS)
+                    obs = Obstacle(
+                        x=ox,
+                        y=oy,
+                        width=1,
+                        height=1,
+                        kind=kind,
+                    )
+                    self._occupy(occupied, ox, oy, 1, "horizontal")
+                    obstacles.append(obs)
+                    break
+
+        # -------------------------------------------------------------
         # Step 2: Constraint - Direct Vertical Blockers (1st degree)
         # -------------------------------------------------------------
         blocker_cols = list(range(player.x + player.length, self.width))
         random.shuffle(blocker_cols)
-        desired_blockers = 1 if self.width == 6 else (
-            2 if self.min_moves >= 5 and len(blocker_cols) >= 2 else 1)
+        desired_blockers = min(num_blockers, len(blocker_cols))
 
         selected_cols = blocker_cols[:desired_blockers]
 
         for col in selected_cols:
             possible_lens = [
-                l for l in self.allowed_lengths if l <= self.height]
+                length for length in self.allowed_lengths if length <= self.height
+            ]
             random.shuffle(possible_lens)
             for vlen in possible_lens:
                 min_y = max(0, self.exit_row - vlen + 1)
                 max_y = min(self.height - vlen, self.exit_row)
-                valid_ys = [y for y in range(
-                    min_y, max_y + 1) if self._is_free(occupied, col, y, vlen, "vertical")]
+                valid_ys = [
+                    y
+                    for y in range(min_y, max_y + 1)
+                    if self._is_free(occupied, col, y, vlen, "vertical")
+                ]
                 if valid_ys:
                     chosen_y = random.choice(valid_ys)
                     v = Vehicle(
-                        vid=f"v{veh_counter}",
                         kind=self._pick_kind(vlen),
                         x=col,
                         y=chosen_y,
@@ -296,7 +369,6 @@ class ConstraintGenerator:
                     )
                     self._occupy(occupied, v.x, v.y, v.length, v.orientation)
                     vehicles.append(v)
-                    veh_counter += 1
                     break
 
         if len(vehicles) == 1:
@@ -313,12 +385,14 @@ class ConstraintGenerator:
                 vlen = random.choice(self.allowed_lengths)
                 min_x = max(0, vert.x - vlen + 1)
                 max_x = min(self.width - vlen, vert.x)
-                valid_xs = [x for x in range(
-                    min_x, max_x + 1) if self._is_free(occupied, x, cy, vlen, "horizontal")]
+                valid_xs = [
+                    x
+                    for x in range(min_x, max_x + 1)
+                    if self._is_free(occupied, x, cy, vlen, "horizontal")
+                ]
                 if valid_xs:
                     chosen_x = random.choice(valid_xs)
                     v = Vehicle(
-                        vid=f"v{veh_counter}",
                         kind=self._pick_kind(vlen),
                         x=chosen_x,
                         y=cy,
@@ -327,14 +401,13 @@ class ConstraintGenerator:
                     )
                     self._occupy(occupied, v.x, v.y, v.length, v.orientation)
                     vehicles.append(v)
-                    veh_counter += 1
 
         # -------------------------------------------------------------
         # Step 4: Density Fill
         # -------------------------------------------------------------
-        target_total = random.randint(self.min_vehicles, self.max_vehicles)
+        target_total = random.randint(veh_range[0], veh_range[1])
         attempts = 0
-        while len(vehicles) < target_total and attempts < 20:
+        while len(vehicles) < target_total and attempts < 25:
             attempts += 1
             orient = random.choice(["horizontal", "vertical"])
             vlen = random.choice(self.allowed_lengths)
@@ -345,7 +418,6 @@ class ConstraintGenerator:
                     continue
                 if self._is_free(occupied, rx, ry, vlen, orient):
                     v = Vehicle(
-                        vid=f"v{veh_counter}",
                         kind=self._pick_kind(vlen),
                         x=rx,
                         y=ry,
@@ -354,7 +426,6 @@ class ConstraintGenerator:
                     )
                     self._occupy(occupied, rx, ry, vlen, orient)
                     vehicles.append(v)
-                    veh_counter += 1
             else:
                 rx = random.randint(0, self.width - 1)
                 ry = random.randint(0, self.height - vlen)
@@ -362,7 +433,6 @@ class ConstraintGenerator:
                     continue  # Keep exit corridor clear of static filler obstacles
                 if self._is_free(occupied, rx, ry, vlen, orient):
                     v = Vehicle(
-                        vid=f"v{veh_counter}",
                         kind=self._pick_kind(vlen),
                         x=rx,
                         y=ry,
@@ -371,7 +441,6 @@ class ConstraintGenerator:
                     )
                     self._occupy(occupied, rx, ry, vlen, orient)
                     vehicles.append(v)
-                    veh_counter += 1
 
         # -------------------------------------------------------------
         # Step 5: Solver Verification (BFS minimum optimal moves)
@@ -381,42 +450,14 @@ class ConstraintGenerator:
             self.height,
             self.exit_row,
             vehicles,
-            max_states=15000,
+            obstacles=obstacles,
+            max_states=20000,
         )
 
-        if moves is not None and self.min_moves <= moves <= self.max_moves:
-            return vehicles, moves
+        if moves is not None:
+            return vehicles, obstacles, moves
 
         return None
-
-    def generate_level(
-        self,
-        level_id: int,
-        name: str,
-        max_attempts: int = 10000,
-    ) -> dict:
-        for attempt in range(1, max_attempts + 1):
-            result = self.generate_single_attempt()
-            if result is not None:
-                vehicles, optimal_moves = result
-                return {
-                    "id": level_id,
-                    "name": name,
-                    "width": self.width,
-                    "height": self.height,
-                    "exit": {
-                        "side": "right",
-                        "row": self.exit_row,
-                    },
-                    "vehicles": [v.to_dict() for v in vehicles],
-                    "par_moves": optimal_moves,
-                }
-
-        raise RuntimeError(
-            f"Failed to generate level '{name}' within [{
-                self.min_moves}, {self.max_moves}] moves "
-            f"after {max_attempts} attempts."
-        )
 
 
 def main():
@@ -431,23 +472,16 @@ def main():
         help="Board grid dimensions (width & height). Default: 6",
     )
     parser.add_argument(
-        "--difficulty",
-        type=str,
-        choices=["beginner", "intermediate", "expert"],
-        default=None,
-        help="Predefined difficulty tier ('beginner', 'intermediate', 'expert')",
-    )
-    parser.add_argument(
         "--min-moves",
         type=int,
-        default=None,
-        help="Minimum optimal moves (overrides --difficulty)",
+        default=4,
+        help="Minimum optimal moves. Default: 4",
     )
     parser.add_argument(
         "--max-moves",
         type=int,
-        default=None,
-        help="Maximum optimal moves (overrides --difficulty)",
+        default=12,
+        help="Maximum optimal moves. Default: 20",
     )
     parser.add_argument(
         "--exit-row",
@@ -459,26 +493,20 @@ def main():
         "--count",
         type=int,
         default=1,
-        help="Number of levels to generate. Default: 1",
+        help="Number of levels to generate per difficulty in the range. Default: 1",
     )
     parser.add_argument(
         "--start-id",
         type=int,
         default=None,
-        help="Starting integer ID for generated levels. Defaults to auto (1 or max existing id + 1).",
+        help="Starting integer ID for generated levels. Defaults to auto (1 or max existing id in pack + 1).",
     )
     parser.add_argument(
-        "--name-prefix",
+        "--output-dir",
+        "-d",
         type=str,
-        default=None,
-        help="Level name prefix (e.g. 'Level' or 'Stage')",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        type=str,
-        default=None,
-        help="Output JSON file path. If omitted, prints to stdout.",
+        default=".",
+        help="Output directory for pack_M_dN.json files. Default: current directory",
     )
     parser.add_argument(
         "--seed",
@@ -489,8 +517,8 @@ def main():
     parser.add_argument(
         "--max-attempts",
         type=int,
-        default=10000,
-        help="Maximum candidate attempts per level. Default: 10000",
+        default=50000,
+        help="Maximum candidate attempts across all difficulties. Default: 50000",
     )
 
     args = parser.parse_args()
@@ -502,133 +530,151 @@ def main():
     exit_row = args.exit_row if args.exit_row is not None else (
         grid_size // 2 - 1)
 
-    if args.min_moves is not None or args.max_moves is not None:
-        min_moves = args.min_moves if args.min_moves is not None else 4
-        max_moves = args.max_moves if args.max_moves is not None else 50
-    elif args.difficulty:
-        min_moves, max_moves = DEFAULT_DIFFICULTIES[args.difficulty]
-    else:
-        if grid_size == 6:
-            min_moves, max_moves = DEFAULT_DIFFICULTIES["beginner"]
-        elif grid_size == 8:
-            min_moves, max_moves = DEFAULT_DIFFICULTIES["intermediate"]
-        else:
-            min_moves, max_moves = DEFAULT_DIFFICULTIES["expert"]
+    min_moves = args.min_moves
+    max_moves = args.max_moves
+    if min_moves > max_moves:
+        parser.error("--min-moves cannot be greater than --max-moves")
 
-    # Read and validate existing levels if file exists
-    existing_levels = []
-    if args.output and os.path.exists(args.output):
-        try:
-            with open(args.output, "r") as f:
-                data = json.load(f)
-                if not isinstance(data, list):
-                    print(
-                        f"Error: Existing file '{
-                            args.output}' does not contain a valid JSON array of levels.",
-                        file=sys.stderr,
-                    )
-                    sys.exit(1)
-                existing_levels = data
-        except Exception as e:
-            print(
-                f"Error: Failed to read existing JSON file '{
-                    args.output}': {e}",
-                file=sys.stderr,
+    output_dir = os.path.abspath(args.output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    target_difficulties = list(range(min_moves, max_moves + 1))
+    loaded_packs: Dict[int, Tuple[str, List[dict]]] = {}
+    generated_counts: Dict[int, int] = defaultdict(int)
+
+    def load_pack(m: int, n: int) -> Tuple[str, List[dict]]:
+        filename = f"pack_{m}_d{n}.json"
+        filepath = os.path.join(output_dir, filename)
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        return filepath, data
+            except Exception as e:
+                print(
+                    f"Warning: Failed to read existing file '{filepath}': {e}",
+                    file=sys.stderr,
+                )
+        return filepath, []
+
+    def save_pack(filepath: str, levels: List[dict]):
+        with open(filepath, "w") as f:
+            json.dump(levels, f, indent=2)
+            f.write("\n")
+
+    def add_level_to_pack(
+        m: int, n: int, vehicles: List[Vehicle], obstacles: List[Obstacle]
+    ) -> dict:
+        filepath, levels = loaded_packs[n]
+        if args.start_id is not None:
+            level_id = args.start_id + generated_counts[n]
+        elif levels:
+            max_id = max(
+                (lvl.get("id", 0) for lvl in levels if isinstance(lvl, dict)),
+                default=0,
             )
-            sys.exit(1)
+            level_id = max_id + 1
+        else:
+            level_id = 1
 
-        # Validate that existing levels match requested grid size and difficulty
-        for lvl in existing_levels:
-            if not isinstance(lvl, dict):
-                continue
-            lw = lvl.get("width")
-            lh = lvl.get("height")
-            if lw != grid_size or lh != grid_size:
-                print(
-                    f"Error: Existing level '{lvl.get('name', lvl.get('id'))}' in '{
-                        args.output}' has grid size "
-                    f"{lw}x{
-                        lh}, which does not match requested --grid-size {grid_size}x{grid_size}.",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+        level = {
+            "id": level_id,
+            "width": grid_size,
+            "height": grid_size,
+            "exit": {
+                "side": "right",
+                "row": exit_row,
+            },
+            "vehicles": [v.to_dict() for v in vehicles],
+            "par_moves": n,
+        }
+        if obstacles:
+            level["obstacles"] = [obs.to_dict() for obs in obstacles]
 
-            par = lvl.get("par_moves")
-            if par is not None and (par < min_moves or par > max_moves):
-                diff_label = f"'{
-                    args.difficulty}'" if args.difficulty else "custom range"
-                print(
-                    f"Error: Existing level '{lvl.get('name', lvl.get('id'))}' in '{
-                        args.output}' has {par} par moves, "
-                    f"which does not match requested difficulty {
-                        diff_label} (moves: {min_moves}..{max_moves}).",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-
-        print(
-            f"Found existing file '{args.output}' with {
-                len(existing_levels)} compatible level(s). "
-            f"Appending new levels.",
-            file=sys.stderr,
-        )
-
-    # Determine start ID
-    if args.start_id is not None:
-        start_id = args.start_id
-    elif existing_levels:
-        max_id = max((lvl.get("id", 0)
-                     for lvl in existing_levels if isinstance(lvl, dict)), default=0)
-        start_id = max_id + 1
-    else:
-        start_id = 1
-
-    name_prefix = args.name_prefix or f"{grid_size}x{grid_size} Stage"
+        levels.append(level)
+        save_pack(filepath, levels)
+        generated_counts[n] += 1
+        return level
 
     generator = ConstraintGenerator(
         width=grid_size,
         height=grid_size,
         exit_row=exit_row,
-        min_moves=min_moves,
-        max_moves=max_moves,
     )
 
-    generated_levels = []
-    for i in range(args.count):
-        lid = start_id + i
-        lname = f"{name_prefix} {lid}"
+    print(
+        f"Generating {args.count} level(s) per difficulty in range [{min_moves}..{max_moves}] "
+        f"({grid_size}x{grid_size} grid) into '{output_dir}'...\n",
+        file=sys.stderr,
+    )
+
+    attempts = 0
+    interrupted = False
+    try:
+        while attempts < args.max_attempts and any(
+            generated_counts[d] < args.count for d in target_difficulties
+        ):
+            attempts += 1
+            result = generator.generate_single_attempt()
+            if result is not None:
+                vehicles, obstacles, solved_n = result
+
+                # Put solved puzzle into pack_M_dN.json if >= min_moves (including > max_moves)
+                if solved_n >= min_moves:
+                    if solved_n not in loaded_packs:
+                        loaded_packs[solved_n] = load_pack(grid_size, solved_n)
+
+                    # If within target range, check count limit; if > max_moves, always save
+                    if solved_n > max_moves or generated_counts[solved_n] < args.count:
+                        lvl = add_level_to_pack(
+                            grid_size, solved_n, vehicles, obstacles
+                        )
+                        filename = f"pack_{grid_size}_d{solved_n}.json"
+                        bonus_tag = (
+                            f" [Bonus > max_moves {max_moves}]"
+                            if solved_n > max_moves
+                            else ""
+                        )
+                        count_str = (
+                            f"[{generated_counts[solved_n]}/{args.count}]"
+                            if solved_n <= max_moves
+                            else f"[total: {len(loaded_packs[solved_n][1])}]"
+                        )
+                        obs_info = (
+                            f", {len(obstacles)} obstacles" if obstacles else ""
+                        )
+                        print(
+                            f" -> Solved d{solved_n}{bonus_tag}: Saved level ID {lvl['id']} "
+                            f"({len(vehicles)} vehicles{obs_info}) to '{filename}' {count_str}",
+                            file=sys.stderr,
+                        )
+    except KeyboardInterrupt:
+        interrupted = True
+        print("\nGeneration stopped (interrupted by user).", file=sys.stderr)
+
+    if not interrupted:
         print(
-            f"Generating [{i + 1}/{args.count}] '{
-                lname}' ({grid_size}x{grid_size}, target moves: {min_moves}..{max_moves})...",
+            f"\nCompleted after {attempts} candidate generation attempts.",
             file=sys.stderr,
         )
-        lvl = generator.generate_level(
-            lid, lname, max_attempts=args.max_attempts)
-        print(f" -> Generated in {lvl['par_moves']} optimal moves ({
-              len(lvl['vehicles'])} vehicles)", file=sys.stderr)
-        generated_levels.append(lvl)
+    else:
+        print(
+            f"Candidate generation attempts prior to stop: {attempts}.",
+            file=sys.stderr,
+        )
 
-    all_levels = existing_levels + generated_levels
-    output_json = json.dumps(all_levels, indent=2)
-
-    if args.output:
-        out_dir = os.path.dirname(os.path.abspath(args.output))
-        if out_dir:
-            os.makedirs(out_dir, exist_ok=True)
-        with open(args.output, "w") as f:
-            f.write(output_json)
-            f.write("\n")
-        if existing_levels:
+    print("\nGeneration summary:", file=sys.stderr)
+    for n in sorted(loaded_packs.keys()):
+        filepath, levels = loaded_packs[n]
+        count = generated_counts.get(n, 0)
+        if count > 0 or n in target_difficulties:
+            bonus_label = " (bonus > max_moves)" if n > max_moves else ""
             print(
-                f"Successfully appended {len(generated_levels)} levels to {
-                    args.output} (total: {len(all_levels)} levels)",
+                f"  - Difficulty {n:2d} moves: {count} new level(s) saved to '{os.path.basename(filepath)}' (total: {
+                    len(levels)}){bonus_label}",
                 file=sys.stderr,
             )
-        else:
-            print(f"Successfully saved {len(generated_levels)} levels to {
-                  args.output}", file=sys.stderr)
-    else:
-        print(output_json)
 
 
 if __name__ == "__main__":

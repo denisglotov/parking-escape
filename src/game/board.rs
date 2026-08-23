@@ -1,3 +1,4 @@
+use super::obstacle::Obstacle;
 use super::theme::Theme;
 use super::vehicle::{Orientation, Vehicle};
 use crate::audio::SoundTrigger;
@@ -97,6 +98,8 @@ pub struct Board {
     pub height: i32,
     pub exit: ExitPosition,
     pub vehicles: Vec<Vehicle>,
+    #[serde(default)]
+    pub obstacles: Vec<Obstacle>,
     #[serde(skip)]
     pub move_count: u32,
     #[serde(skip)]
@@ -113,16 +116,26 @@ pub struct Board {
     pub exit_animation_progress: f32,
     #[serde(skip)]
     initial_vehicles: Vec<Vehicle>,
+    #[serde(skip)]
+    initial_obstacles: Vec<Obstacle>,
 }
 
 impl Board {
-    pub fn new(width: i32, height: i32, exit: ExitPosition, vehicles: Vec<Vehicle>) -> Self {
+    pub fn new(
+        width: i32,
+        height: i32,
+        exit: ExitPosition,
+        vehicles: Vec<Vehicle>,
+        obstacles: Vec<Obstacle>,
+    ) -> Self {
         let initial_vehicles = vehicles.clone();
+        let initial_obstacles = obstacles.clone();
         Self {
             width,
             height,
             exit,
             vehicles,
+            obstacles,
             move_count: 0,
             history: Vec::new(),
             active_drag: None,
@@ -131,6 +144,7 @@ impl Board {
             theme: Theme::default(),
             exit_animation_progress: 0.0,
             initial_vehicles,
+            initial_obstacles,
         }
     }
 
@@ -139,17 +153,22 @@ impl Board {
         x >= 0 && x < self.width && y >= 0 && y < self.height
     }
 
-    /// Checks if a cell is free of any obstacles, ignoring an optional vehicle index.
+    /// Checks if a cell is free of any vehicles and static obstacles, ignoring an optional vehicle index.
     pub fn is_cell_free(&self, x: i32, y: i32, ignore_idx: Option<usize>) -> bool {
         if !self.is_inside_board(x, y) {
             return false;
         }
 
-        self.vehicles
+        let vehicle_free = self
+            .vehicles
             .iter()
             .enumerate()
             .filter(|(idx, _)| ignore_idx != Some(*idx))
-            .all(|(_, v)| !v.contains_cell(x, y))
+            .all(|(_, v)| !v.contains_cell(x, y));
+
+        let obstacle_free = self.obstacles.iter().all(|obs| !obs.contains_cell(x, y));
+
+        vehicle_free && obstacle_free
     }
 
     /// Computes the valid movement range [min_offset, max_offset] for a vehicle in integer grid units.
@@ -203,6 +222,13 @@ impl Board {
             .position(|(idx, other)| idx != vehicle_idx && other.contains_cell(target_x, target_y))
     }
 
+    /// Finds the index of the static obstacle at `(target_x, target_y)`, if any.
+    pub fn find_obstacle_at(&self, target_x: i32, target_y: i32) -> Option<usize> {
+        self.obstacles
+            .iter()
+            .position(|obs| obs.contains_cell(target_x, target_y))
+    }
+
     /// Triggers a bump effect on a vehicle, setting its BumpState and returning the corresponding sound trigger.
     /// In Marine theme, the hitting vessel does not rebounce; if another ship was struck, it drifts away from the impact.
     pub fn trigger_bump(
@@ -221,6 +247,27 @@ impl Board {
             is_emergency,
             enable_bounce,
         ));
+
+        // If hitting a static obstacle, trigger wobble/shake feedback on that obstacle
+        let v = &self.vehicles[vehicle_idx];
+        let (min_bound, max_bound) = self.compute_movement_bounds(vehicle_idx);
+        let offset = if impact_dir >= 0.0 {
+            max_bound
+        } else {
+            min_bound
+        };
+
+        let (target_x, target_y) = match (v.orientation, impact_dir >= 0.0) {
+            (Orientation::Horizontal, true) => (v.x + offset + v.length, v.y),
+            (Orientation::Horizontal, false) => (v.x + offset - 1, v.y),
+            (Orientation::Vertical, true) => (v.x, v.y + offset + v.length),
+            (Orientation::Vertical, false) => (v.x, v.y + offset - 1),
+        };
+
+        if let Some(obs_idx) = self.find_obstacle_at(target_x, target_y) {
+            let intensity = (velocity.abs() / 9.0).clamp(0.5, 1.0);
+            self.obstacles[obs_idx].trigger_wobble(intensity);
+        }
 
         if is_marine {
             if let Some(other_idx) = self.find_obstacle_vehicle(vehicle_idx, impact_dir) {
@@ -299,6 +346,17 @@ impl Board {
         // If any vehicle is coasting with inertia, finalize it immediately
         if let Some(coast) = self.active_coast.take() {
             self.finalize_vehicle_offset(coast.vehicle_index);
+        }
+
+        // If an obstacle was tapped, trigger its wobble animation for tactile feedback
+        let hit_obs = self.obstacles.iter_mut().rev().find(|obs| {
+            let (px, py, pw, ph) = obs.pixel_bounds(origin_x, origin_y, cell_size);
+            mouse_x >= px && mouse_x <= px + pw && mouse_y >= py && mouse_y <= py + ph
+        });
+
+        if let Some(obs) = hit_obs {
+            obs.trigger_wobble(0.8);
+            return false;
         }
 
         let hit = self.vehicles.iter().enumerate().rev().find_map(|(idx, v)| {
@@ -474,6 +532,11 @@ impl Board {
             v.drift_state = None;
             v.drag_offset = 0.0;
         }
+        self.obstacles = self.initial_obstacles.clone();
+        for obs in &mut self.obstacles {
+            obs.wobble_timer = 0.0;
+            obs.wobble_intensity = 0.0;
+        }
         self.history.clear();
         self.move_count = 0;
         self.active_drag = None;
@@ -487,7 +550,12 @@ impl Board {
     pub fn update(&mut self, dt: f32) -> Option<SoundTrigger> {
         let mut sound_trigger = None;
 
-        // 1. Advance vehicle bump and drift effects
+        // 1. Advance obstacle wobble animations
+        for obs in &mut self.obstacles {
+            obs.update(dt);
+        }
+
+        // 2. Advance vehicle bump and drift effects
         for v in &mut self.vehicles {
             if let Some(bump) = &mut v.bump_state {
                 if !bump.update(dt) {
@@ -584,7 +652,6 @@ mod tests {
     fn test_board_movement_and_undo() {
         let vehicles = vec![
             Vehicle::new(
-                "player",
                 VehicleKind::PlayerRed,
                 1,
                 2,
@@ -593,7 +660,6 @@ mod tests {
                 true,
             ),
             Vehicle::new(
-                "c1",
                 VehicleKind::CarSedanBlue,
                 3,
                 1,
@@ -609,7 +675,7 @@ mod tests {
             col: 0,
         };
 
-        let mut board = Board::new(6, 6, exit, vehicles);
+        let mut board = Board::new(6, 6, exit, vehicles, vec![]);
         assert_eq!(board.move_count, 0);
 
         // Compute movement bounds for player
@@ -651,7 +717,6 @@ mod tests {
     fn test_fast_slide_bump_and_emergency_vehicle() {
         let vehicles = vec![
             Vehicle::new(
-                "police",
                 VehicleKind::CarPolice,
                 0,
                 0,
@@ -660,7 +725,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "ambulance",
                 VehicleKind::Ambulance,
                 0,
                 1,
@@ -669,7 +733,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "sedan",
                 VehicleKind::CarSedanBlue,
                 0,
                 2,
@@ -685,7 +748,7 @@ mod tests {
             col: 0,
         };
 
-        let mut board = Board::new(6, 6, exit, vehicles);
+        let mut board = Board::new(6, 6, exit, vehicles, vec![]);
 
         // Standard sedan bump -> Alarm trigger
         let trigger_sedan = board.trigger_bump(2, 1.0, 5.0);
@@ -729,7 +792,6 @@ mod tests {
     #[test]
     fn test_vehicle_mass_and_inertia_coasting() {
         let car = Vehicle::new(
-            "c",
             VehicleKind::CarSedanBlue,
             0,
             0,
@@ -738,7 +800,6 @@ mod tests {
             false,
         );
         let truck = Vehicle::new(
-            "t",
             VehicleKind::TruckDelivery,
             0,
             1,
@@ -747,7 +808,6 @@ mod tests {
             false,
         );
         let semi = Vehicle::new(
-            "s",
             VehicleKind::SemiTruck,
             0,
             2,
@@ -769,7 +829,7 @@ mod tests {
             col: 0,
         };
 
-        let mut board = Board::new(6, 6, exit, vec![car, truck, semi]);
+        let mut board = Board::new(6, 6, exit, vec![car, truck, semi], vec![]);
 
         // Start inertial coast on truck
         board.active_coast = Some(InertiaCoastState {
@@ -787,7 +847,6 @@ mod tests {
     #[test]
     fn test_marine_theme_and_water_inertia() {
         let ship = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             0,
             0,
@@ -803,10 +862,10 @@ mod tests {
         };
 
         // Create standard city board vs marine board
-        let mut city_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        let mut city_board = Board::new(6, 6, exit, vec![ship.clone()], vec![]);
         city_board.theme = Theme::City;
 
-        let mut marine_board = Board::new(6, 6, exit, vec![ship.clone()]);
+        let mut marine_board = Board::new(6, 6, exit, vec![ship.clone()], vec![]);
         marine_board.theme = Theme::Marine;
 
         // Verify marine sprite lookup
@@ -864,7 +923,6 @@ mod tests {
     #[test]
     fn test_marine_theme_collision_no_rebounce_and_obstacle_drift() {
         let boat_player = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             1,
             2,
@@ -873,7 +931,6 @@ mod tests {
             true,
         );
         let boat_blocker = Vehicle::new(
-            "blocker_boat",
             VehicleKind::CarSedanBlue,
             3,
             1,
@@ -888,7 +945,7 @@ mod tests {
             col: 0,
         };
 
-        let mut board = Board::new(6, 6, exit, vec![boat_player, boat_blocker]);
+        let mut board = Board::new(6, 6, exit, vec![boat_player, boat_blocker], vec![]);
         board.theme = Theme::Marine;
 
         // Player boat moves right (+1.0) and bumps into blocker boat
@@ -932,7 +989,6 @@ mod tests {
     #[test]
     fn test_marine_wall_collision() {
         let boat = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             0,
             0,
@@ -947,7 +1003,7 @@ mod tests {
             col: 0,
         };
 
-        let mut board = Board::new(6, 6, exit, vec![boat]);
+        let mut board = Board::new(6, 6, exit, vec![boat], vec![]);
         board.theme = Theme::Marine;
 
         // Boat hits the left wall (impact_dir = -1.0)
@@ -971,5 +1027,57 @@ mod tests {
         );
         // No drift state on hitting boat
         assert!(board.vehicles[0].drift_state.is_none());
+    }
+
+    #[test]
+    fn test_board_obstacles_collision_and_interaction() {
+        let player = Vehicle::new(
+            VehicleKind::PlayerRed,
+            0,
+            2,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+        let rock = Obstacle::rock_1x1(3, 2);
+        let buoy = Obstacle::buoy_1x1(0, 0);
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 2,
+            col: 0,
+        };
+
+        let mut board = Board::new(6, 6, exit, vec![player], vec![rock, buoy]);
+
+        // Cell (3, 2) is occupied by rock, so player at (0..2, 2) can only move 1 unit right to x=1 (occupying 1..3)
+        let (p_min, p_max) = board.compute_movement_bounds(0);
+        assert_eq!(p_min, 0);
+        assert_eq!(p_max, 1); // target x=1, car occupies (1, 2) and (2, 2), (3, 2) is blocked by rock
+
+        assert!(!board.is_cell_free(3, 2, None));
+        assert!(!board.is_cell_free(0, 0, None));
+        assert!(board.is_cell_free(4, 2, None));
+
+        // Player bumps into rock at (3, 2) with max_bound
+        assert_eq!(board.find_obstacle_at(3, 2), Some(0));
+        let _ = board.trigger_bump(0, 1.0, 7.0);
+
+        // Rock should have triggered wobble
+        assert!(board.obstacles[0].wobble_timer > 0.0);
+        let _ = board.update(0.1);
+        let (ox, _) = board.obstacles[0].wobble_offset();
+        assert!(ox.abs() > 0.0);
+
+        // Touch down on buoy at (0, 0)
+        let tapped = board.handle_touch_down(25.0, 25.0, 0.0, 0.0, 50.0);
+        assert!(
+            !tapped,
+            "Touching static obstacle should not start a vehicle drag"
+        );
+        assert!(
+            board.obstacles[1].wobble_timer > 0.0,
+            "Touching buoy should trigger its wobble animation"
+        );
     }
 }
