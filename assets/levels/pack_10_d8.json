@@ -1,0 +1,264 @@
+[
+  {
+    "id": 1,
+    "width": 10,
+    "height": 10,
+    "exit": {
+      "side": "right",
+      "row": 4
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "bus_transit",
+        "x": 2,
+        "y": 3,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 6,
+        "y": 3,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 1,
+        "y": 2,
+        "length": 4,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 5,
+        "y": 7,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "bus_transit",
+        "x": 4,
+        "y": 1,
+        "length": 4,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 1,
+        "y": 1,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "limo_white",
+        "x": 6,
+        "y": 2,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "bus_transit",
+        "x": 0,
+        "y": 7,
+        "length": 4,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 8,
+    "obstacles": [
+      {
+        "x": 5,
+        "y": 2,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "width": 1,
+        "height": 1,
+        "kind": "pillar"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "width": 10,
+    "height": 10,
+    "exit": {
+      "side": "right",
+      "row": 4
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 5,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 7,
+        "y": 3,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "bus_transit",
+        "x": 8,
+        "y": 1,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_police",
+        "x": 6,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 8,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "bus_transit",
+        "x": 3,
+        "y": 4,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "bus_transit",
+        "x": 6,
+        "y": 6,
+        "length": 4,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 0,
+        "y": 8,
+        "length": 4,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 5,
+        "y": 0,
+        "length": 4,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 8,
+    "obstacles": [
+      {
+        "x": 3,
+        "y": 3,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "width": 10,
+    "height": 10,
+    "exit": {
+      "side": "right",
+      "row": 4
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 3,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "semi_truck",
+        "x": 6,
+        "y": 1,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 7,
+        "y": 2,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 6,
+        "y": 0,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 5,
+        "y": 6,
+        "length": 4,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "semi_truck",
+        "x": 3,
+        "y": 6,
+        "length": 4,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 2,
+        "y": 4,
+        "length": 3,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 8,
+    "obstacles": [
+      {
+        "x": 3,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "kind": "pillar"
+      },
+      {
+        "x": 7,
+        "y": 7,
+        "width": 1,
+        "height": 1,
+        "kind": "barrier"
+      }
+    ]
+  }
+]

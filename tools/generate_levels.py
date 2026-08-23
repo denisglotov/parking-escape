@@ -480,7 +480,7 @@ def main():
     parser.add_argument(
         "--max-moves",
         type=int,
-        default=20,
+        default=12,
         help="Maximum optimal moves. Default: 20",
     )
     parser.add_argument(

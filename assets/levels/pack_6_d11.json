@@ -1,0 +1,1029 @@
+[
+  {
+    "id": 1,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 4,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 2,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 1,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 2,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "limo_white",
+        "x": 4,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 1,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 3,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 4,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 3,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 4,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 2,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 1,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 0,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 4,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "ambulance",
+        "x": 5,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 0,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 2,
+        "y": 0,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 1,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 4,
+        "y": 4,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 2,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 5,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 2,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "ambulance",
+        "x": 0,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 6,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 3,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 4,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "ambulance",
+        "x": 3,
+        "y": 0,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 2,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 0,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 7,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "ambulance",
+        "x": 5,
+        "y": 2,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 2,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 1,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "limo_white",
+        "x": 1,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "ambulance",
+        "x": 2,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 4,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "kind": "barrier"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "ambulance",
+        "x": 5,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 2,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 2,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "limo_white",
+        "x": 1,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 9,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "ambulance",
+        "x": 2,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 4,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_police",
+        "x": 1,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 1,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 3,
+        "y": 5,
+        "length": 2,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 10,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 5,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 3,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 1,
+        "y": 0,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_police",
+        "x": 2,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 0,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 2,
+        "y": 4,
+        "width": 1,
+        "height": 1,
+        "kind": "pillar"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "limo_white",
+        "x": 4,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 3,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 4,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 1,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 3,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "barrier"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 2,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "car_police",
+        "x": 5,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 4,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 3,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "limo_white",
+        "x": 0,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 2,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 3,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 2,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "pillar"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 1,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "limo_white",
+        "x": 4,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 3,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_hatchback_green",
+        "x": 4,
+        "y": 4,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 3,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 1,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 3,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 5,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "pillar"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "limo_white",
+        "x": 2,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 5,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "limo_white",
+        "x": 3,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 0,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 1,
+        "y": 5,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 15,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 0,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "car_taxi_yellow",
+        "x": 2,
+        "y": 1,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 5,
+        "y": 1,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 1,
+        "y": 3,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_police",
+        "x": 4,
+        "y": 0,
+        "length": 2,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "ambulance",
+        "x": 2,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "ambulance",
+        "x": 0,
+        "y": 0,
+        "length": 3,
+        "orientation": "horizontal"
+      }
+    ],
+    "par_moves": 11
+  },
+  {
+    "id": 16,
+    "width": 6,
+    "height": 6,
+    "exit": {
+      "side": "right",
+      "row": 2
+    },
+    "vehicles": [
+      {
+        "kind": "player_red",
+        "x": 2,
+        "y": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "is_player": true
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 4,
+        "y": 2,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "ambulance",
+        "x": 5,
+        "y": 0,
+        "length": 3,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "truck_delivery",
+        "x": 3,
+        "y": 4,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "limo_white",
+        "x": 2,
+        "y": 1,
+        "length": 3,
+        "orientation": "horizontal"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 1,
+        "y": 3,
+        "length": 2,
+        "orientation": "vertical"
+      },
+      {
+        "kind": "car_sedan_blue",
+        "x": 2,
+        "y": 4,
+        "length": 2,
+        "orientation": "vertical"
+      }
+    ],
+    "par_moves": 11,
+    "obstacles": [
+      {
+        "x": 1,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "barrier"
+      }
+    ]
+  }
+]

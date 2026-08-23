@@ -3,7 +3,7 @@ mod game;
 mod ui;
 
 use audio::{SoundManager, SoundTrigger};
-use game::level::{LevelRecord, LevelRepository, PackType};
+use game::level::{DifficultyTier, FieldSize, LevelRecord, LevelRepository, PackKey};
 use game::Board;
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -40,9 +40,10 @@ async fn main() {
     let repo = LevelRepository::load_embedded().expect("Failed to load embedded level packs");
     let mut water_ripples = WaterRippleManager::new();
 
-    let mut records: HashMap<(PackType, usize), LevelRecord> = HashMap::new();
-    let mut current_pack = PackType::Grid6x6;
+    let mut records: HashMap<(PackKey, usize), LevelRecord> = HashMap::new();
+    let mut current_pack = PackKey::new(FieldSize::Small6x6, DifficultyTier::Relaxed);
     let mut current_level_idx = 0;
+    let mut level_select_scroll = 0.0f32;
     let mut current_board: Board = repo
         .get_level(current_pack, current_level_idx)
         .expect("Initial level missing")
@@ -84,6 +85,7 @@ async fn main() {
                     &repo,
                     &records,
                     &mut current_pack,
+                    &mut level_select_scroll,
                     &textures,
                     screen_w,
                     screen_h,

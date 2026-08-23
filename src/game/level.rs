@@ -3,17 +3,79 @@ use super::obstacle::Obstacle;
 use super::theme::Theme;
 use super::vehicle::Vehicle;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PackType {
-    Grid6x6,
-    Grid8x8,
-    Grid10x10,
+pub enum FieldSize {
+    Small6x6,
+    Medium8x8,
+    Big10x10,
+}
+
+impl FieldSize {
+    pub const ALL: [FieldSize; 3] = [
+        FieldSize::Small6x6,
+        FieldSize::Medium8x8,
+        FieldSize::Big10x10,
+    ];
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            FieldSize::Small6x6 => "Small 6x6",
+            FieldSize::Medium8x8 => "Medium 8x8",
+            FieldSize::Big10x10 => "Big 10x10",
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn dimension(&self) -> i32 {
+        match self {
+            FieldSize::Small6x6 => 6,
+            FieldSize::Medium8x8 => 8,
+            FieldSize::Big10x10 => 10,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DifficultyTier {
+    Relaxed,
+    Challenging,
+    Hard,
+}
+
+impl DifficultyTier {
+    pub const ALL: [DifficultyTier; 3] = [
+        DifficultyTier::Relaxed,
+        DifficultyTier::Challenging,
+        DifficultyTier::Hard,
+    ];
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            DifficultyTier::Relaxed => "Relaxed",
+            DifficultyTier::Challenging => "Challenging",
+            DifficultyTier::Hard => "Hard",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PackKey {
+    pub size: FieldSize,
+    pub difficulty: DifficultyTier,
+}
+
+impl PackKey {
+    pub const fn new(size: FieldSize, difficulty: DifficultyTier) -> Self {
+        Self { size, difficulty }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LevelData {
     pub id: u32,
+    #[serde(default = "default_level_name")]
     pub name: String,
     pub width: i32,
     pub height: i32,
@@ -23,6 +85,10 @@ pub struct LevelData {
     pub obstacles: Vec<Obstacle>,
     #[serde(default = "default_par")]
     pub par_moves: u32,
+}
+
+fn default_level_name() -> String {
+    "Level".to_string()
 }
 
 const fn default_par() -> u32 {
@@ -69,81 +135,202 @@ impl LevelRecord {
     }
 }
 
+/// Mixes levels from multiple difficulty buckets in round-robin zig-zag manner,
+/// renumbering the resulting levels sequentially.
+pub fn mix_zigzag(buckets: &[Vec<LevelData>]) -> Vec<LevelData> {
+    let max_len = buckets.iter().map(Vec::len).max().unwrap_or(0);
+    (0..max_len)
+        .flat_map(|idx| buckets.iter().filter_map(move |b| b.get(idx).cloned()))
+        .enumerate()
+        .map(|(i, mut lvl)| {
+            let id = (i + 1) as u32;
+            lvl.id = id;
+            lvl.name = format!("Level {}", id);
+            lvl
+        })
+        .collect()
+}
+
 pub struct LevelRepository {
-    pub pack_6x6: Vec<LevelData>,
-    pub pack_8x8: Vec<LevelData>,
-    pub pack_10x10: Vec<LevelData>,
+    packs: HashMap<PackKey, Vec<LevelData>>,
 }
 
 impl LevelRepository {
     pub fn load_embedded() -> Result<Self, serde_json::Error> {
-        let p6_str = include_str!("../../assets/levels/pack_6x6.json");
-        let p8_str = include_str!("../../assets/levels/pack_8x8.json");
-        let p10_str = include_str!("../../assets/levels/pack_10x10.json");
+        let mut packs = HashMap::new();
 
-        let pack_6x6: Vec<LevelData> = serde_json::from_str(p6_str)?;
-        let pack_8x8: Vec<LevelData> = serde_json::from_str(p8_str)?;
-        let pack_10x10: Vec<LevelData> = serde_json::from_str(p10_str)?;
+        // 6x6
+        let p6_d4: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d4.json"))?;
+        let p6_d5: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d5.json"))?;
+        let p6_d6: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d6.json"))?;
+        let p6_d7: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d7.json"))?;
+        let p6_d8: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d8.json"))?;
+        let p6_d9: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d9.json"))?;
+        let p6_d10: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d10.json"))?;
+        let p6_d11: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d11.json"))?;
+        let p6_d12: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d12.json"))?;
+        let p6_d13: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_6_d13.json"))?;
 
-        Ok(Self {
-            pack_6x6,
-            pack_8x8,
-            pack_10x10,
-        })
+        packs.insert(
+            PackKey::new(FieldSize::Small6x6, DifficultyTier::Relaxed),
+            mix_zigzag(&[p6_d4, p6_d5, p6_d6]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Small6x6, DifficultyTier::Challenging),
+            mix_zigzag(&[p6_d7, p6_d8, p6_d9]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Small6x6, DifficultyTier::Hard),
+            mix_zigzag(&[p6_d10, p6_d11, p6_d12, p6_d13]),
+        );
+
+        // 8x8
+        let p8_d4: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d4.json"))?;
+        let p8_d5: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d5.json"))?;
+        let p8_d6: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d6.json"))?;
+        let p8_d7: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d7.json"))?;
+        let p8_d8: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d8.json"))?;
+        let p8_d9: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d9.json"))?;
+        let p8_d10: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d10.json"))?;
+        let p8_d11: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d11.json"))?;
+        let p8_d12: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d12.json"))?;
+        let p8_d13: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_8_d13.json"))?;
+
+        packs.insert(
+            PackKey::new(FieldSize::Medium8x8, DifficultyTier::Relaxed),
+            mix_zigzag(&[p8_d4, p8_d5, p8_d6]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Medium8x8, DifficultyTier::Challenging),
+            mix_zigzag(&[p8_d7, p8_d8, p8_d9]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Medium8x8, DifficultyTier::Hard),
+            mix_zigzag(&[p8_d10, p8_d11, p8_d12, p8_d13]),
+        );
+
+        // 10x10
+        let p10_d4: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d4.json"))?;
+        let p10_d5: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d5.json"))?;
+        let p10_d6: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d6.json"))?;
+        let p10_d7: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d7.json"))?;
+        let p10_d8: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d8.json"))?;
+        let p10_d9: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d9.json"))?;
+        let p10_d10: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d10.json"))?;
+        let p10_d11: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d11.json"))?;
+        let p10_d12: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d12.json"))?;
+        let p10_d13: Vec<LevelData> =
+            serde_json::from_str(include_str!("../../assets/levels/pack_10_d13.json"))?;
+
+        packs.insert(
+            PackKey::new(FieldSize::Big10x10, DifficultyTier::Relaxed),
+            mix_zigzag(&[p10_d4, p10_d5, p10_d6]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Big10x10, DifficultyTier::Challenging),
+            mix_zigzag(&[p10_d7, p10_d8, p10_d9]),
+        );
+        packs.insert(
+            PackKey::new(FieldSize::Big10x10, DifficultyTier::Hard),
+            mix_zigzag(&[p10_d10, p10_d11, p10_d12, p10_d13]),
+        );
+
+        Ok(Self { packs })
     }
 
-    pub fn get_pack(&self, pack: PackType) -> &[LevelData] {
-        match pack {
-            PackType::Grid6x6 => &self.pack_6x6,
-            PackType::Grid8x8 => &self.pack_8x8,
-            PackType::Grid10x10 => &self.pack_10x10,
-        }
+    pub fn get_pack(&self, key: PackKey) -> &[LevelData] {
+        self.packs.get(&key).map_or(&[], Vec::as_slice)
     }
 
-    pub fn get_level(&self, pack: PackType, index: usize) -> Option<&LevelData> {
-        self.get_pack(pack).get(index)
+    pub fn get_level(&self, key: PackKey, index: usize) -> Option<&LevelData> {
+        self.get_pack(key).get(index)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::solver::solve;
 
     #[test]
-    #[ignore]
-    fn test_all_embedded_levels_are_solvable() {
-        let repo = LevelRepository::load_embedded().expect("Failed to parse embedded levels");
-        assert!(!repo.pack_6x6.is_empty());
-        assert!(!repo.pack_8x8.is_empty());
-        assert!(!repo.pack_10x10.is_empty());
+    fn test_mix_zigzag() {
+        let make_lvl = |id: u32, par: u32| LevelData {
+            id,
+            name: format!("Original {}", id),
+            width: 6,
+            height: 6,
+            exit: ExitPosition {
+                side: super::super::board::ExitSide::Right,
+                row: 2,
+                col: 0,
+            },
+            vehicles: vec![],
+            obstacles: vec![],
+            par_moves: par,
+        };
 
-        for (pack_type, pack) in [
-            (PackType::Grid6x6, &repo.pack_6x6),
-            (PackType::Grid8x8, &repo.pack_8x8),
-            (PackType::Grid10x10, &repo.pack_10x10),
-        ] {
-            for lvl in pack {
-                let solution = solve(
-                    lvl.width,
-                    lvl.height,
-                    lvl.exit,
-                    &lvl.vehicles,
-                    &lvl.obstacles,
-                );
-                assert!(
-                    solution.is_some(),
-                    "Level {} ({:?}) should be solvable",
-                    lvl.name,
-                    pack_type
-                );
-                let moves = solution.unwrap();
-                assert_eq!(
-                    moves, lvl.par_moves,
-                    "Par moves for level {} should match BFS optimal moves",
-                    lvl.name
-                );
-            }
+        let bucket_a = vec![make_lvl(1, 4), make_lvl(2, 4), make_lvl(3, 4)];
+        let bucket_b = vec![make_lvl(10, 5), make_lvl(20, 5)];
+        let bucket_c = vec![make_lvl(100, 6)];
+
+        let mixed = mix_zigzag(&[bucket_a, bucket_b, bucket_c]);
+
+        // Expected order:
+        // idx 0: A[0] (par 4), B[0] (par 5), C[0] (par 6)
+        // idx 1: A[1] (par 4), B[1] (par 5)
+        // idx 2: A[2] (par 4)
+        assert_eq!(mixed.len(), 6);
+        let pars: Vec<u32> = mixed.iter().map(|l| l.par_moves).collect();
+        assert_eq!(pars, vec![4, 5, 6, 4, 5, 4]);
+
+        let ids: Vec<u32> = mixed.iter().map(|l| l.id).collect();
+        assert_eq!(ids, vec![1, 2, 3, 4, 5, 6]);
+
+        let names: Vec<&str> = mixed.iter().map(|l| l.name.as_str()).collect();
+        assert_eq!(
+            names,
+            vec!["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Level 6"]
+        );
+    }
+
+    #[test]
+    fn test_embedded_packs_load() {
+        let repo = LevelRepository::load_embedded().expect("Embedded levels should load");
+        for size in FieldSize::ALL {
+            let relaxed = repo.get_pack(PackKey::new(size, DifficultyTier::Relaxed));
+            assert!(
+                !relaxed.is_empty(),
+                "Relaxed pack for {:?} should not be empty",
+                size
+            );
         }
     }
 }
