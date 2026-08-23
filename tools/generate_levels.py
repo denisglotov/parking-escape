@@ -22,7 +22,7 @@ VEHICLE_KINDS_BY_LENGTH = {
 
 DEFAULT_DIFFICULTIES = {
     "beginner": (4, 7),
-    "intermediate": (8, 12),
+    "intermediate": (8, 11),
     "expert": (12, 25),
 }
 
@@ -63,11 +63,49 @@ class Vehicle:
         }
 
 
+class Obstacle:
+    def __init__(
+        self,
+        oid: str,
+        x: int,
+        y: int,
+        width: int = 1,
+        height: int = 1,
+        kind: Optional[str] = None,
+    ):
+        self.id = oid
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.kind = kind
+
+    def cells(self) -> List[Tuple[int, int]]:
+        return [
+            (self.x + dx, self.y + dy)
+            for dy in range(self.height)
+            for dx in range(self.width)
+        ]
+
+    def to_dict(self) -> dict:
+        d = {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height,
+        }
+        if self.kind:
+            d["kind"] = self.kind
+        return d
+
+
 def solve_puzzle(
     width: int,
     height: int,
     exit_row: int,
     vehicles: List[Vehicle],
+    obstacles: Optional[List[Obstacle]] = None,
     max_states: int = 15000,
 ) -> Optional[int]:
     """
@@ -89,6 +127,12 @@ def solve_puzzle(
     num_v = len(vehicles)
     plen = v_lens[player_idx]
 
+    obstacle_cells: Set[Tuple[int, int]] = set()
+    if obstacles:
+        for obs in obstacles:
+            for cell in obs.cells():
+                obstacle_cells.add(cell)
+
     while queue:
         state, moves = queue.popleft()
         px, py = state[player_idx]
@@ -101,7 +145,8 @@ def solve_puzzle(
             continue
 
         # Spatial hash of occupied cells
-        grid: Dict[Tuple[int, int], int] = {}
+        grid: Dict[Tuple[int, int], int] = {
+            cell: -1 for cell in obstacle_cells}
         for i, (vx, vy) in enumerate(state):
             vl = v_lens[i]
             vo = v_orients[i]

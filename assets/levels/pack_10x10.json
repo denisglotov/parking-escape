@@ -212,7 +212,25 @@
         "is_player": false
       }
     ],
-    "par_moves": 4
+    "par_moves": 4,
+    "obstacles": [
+      {
+        "id": "buoy_1",
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "kind": "buoy"
+      },
+      {
+        "id": "rock_1",
+        "x": 9,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      }
+    ]
   },
   {
     "id": 3,
@@ -382,7 +400,25 @@
         "is_player": false
       }
     ],
-    "par_moves": 4
+    "par_moves": 4,
+    "obstacles": [
+      {
+        "id": "buoy_1",
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1,
+        "kind": "buoy"
+      },
+      {
+        "id": "buoy_2",
+        "x": 9,
+        "y": 8,
+        "width": 1,
+        "height": 1,
+        "kind": "buoy"
+      }
+    ]
   },
   {
     "id": 5,
@@ -570,7 +606,25 @@
         "is_player": false
       }
     ],
-    "par_moves": 4
+    "par_moves": 4,
+    "obstacles": [
+      {
+        "id": "buoy_1",
+        "x": 1,
+        "y": 1,
+        "width": 1,
+        "height": 1,
+        "kind": "buoy"
+      },
+      {
+        "id": "rock_1",
+        "x": 8,
+        "y": 8,
+        "width": 1,
+        "height": 1,
+        "kind": "rock"
+      }
+    ]
   },
   {
     "id": 7,

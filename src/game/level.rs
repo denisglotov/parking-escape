@@ -1,4 +1,5 @@
 use super::board::{Board, ExitPosition};
+use super::obstacle::Obstacle;
 use super::theme::Theme;
 use super::vehicle::Vehicle;
 use serde::{Deserialize, Serialize};
@@ -18,6 +19,8 @@ pub struct LevelData {
     pub height: i32,
     pub exit: ExitPosition,
     pub vehicles: Vec<Vehicle>,
+    #[serde(default)]
+    pub obstacles: Vec<Obstacle>,
     #[serde(default = "default_par")]
     pub par_moves: u32,
 }
@@ -28,7 +31,13 @@ const fn default_par() -> u32 {
 
 impl LevelData {
     pub fn to_board(&self) -> Board {
-        let mut board = Board::new(self.width, self.height, self.exit, self.vehicles.clone());
+        let mut board = Board::new(
+            self.width,
+            self.height,
+            self.exit,
+            self.vehicles.clone(),
+            self.obstacles.clone(),
+        );
         board.theme = Theme::for_level(self.id);
         board
     }
@@ -115,7 +124,13 @@ mod tests {
             (PackType::Grid10x10, &repo.pack_10x10),
         ] {
             for lvl in pack {
-                let solution = solve(lvl.width, lvl.height, lvl.exit, &lvl.vehicles);
+                let solution = solve(
+                    lvl.width,
+                    lvl.height,
+                    lvl.exit,
+                    &lvl.vehicles,
+                    &lvl.obstacles,
+                );
                 assert!(
                     solution.is_some(),
                     "Level {} ({:?}) should be solvable",
