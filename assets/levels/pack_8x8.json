@@ -10,7 +10,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 4,
         "y": 3,
@@ -19,7 +18,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "truck_delivery",
         "x": 6,
         "y": 1,
@@ -28,7 +26,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "semi_truck",
         "x": 7,
         "y": 0,
@@ -37,7 +34,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "semi_truck",
         "x": 4,
         "y": 4,
@@ -46,7 +42,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "truck_delivery",
         "x": 1,
         "y": 0,
@@ -55,7 +50,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "bus_transit",
         "x": 3,
         "y": 4,
@@ -64,7 +58,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "bus_transit",
         "x": 0,
         "y": 1,
@@ -73,7 +66,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "ambulance",
         "x": 3,
         "y": 2,
@@ -95,7 +87,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 0,
         "y": 3,
@@ -104,7 +95,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "semi_truck",
         "x": 2,
         "y": 2,
@@ -113,7 +103,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "bus_transit",
         "x": 5,
         "y": 0,
@@ -122,7 +111,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "car_hatchback_green",
         "x": 1,
         "y": 1,
@@ -131,7 +119,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "semi_truck",
         "x": 4,
         "y": 4,
@@ -140,7 +127,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "bus_transit",
         "x": 2,
         "y": 6,
@@ -149,7 +135,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "car_hatchback_green",
         "x": 3,
         "y": 2,
@@ -158,7 +143,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "ambulance",
         "x": 2,
         "y": 7,
@@ -170,7 +154,6 @@
     "par_moves": 11,
     "obstacles": [
       {
-        "id": "buoy_1",
         "x": 0,
         "y": 0,
         "width": 1,
@@ -178,7 +161,6 @@
         "kind": "buoy"
       },
       {
-        "id": "rock_1",
         "x": 7,
         "y": 1,
         "width": 1,
@@ -198,7 +180,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 2,
         "y": 3,
@@ -207,7 +188,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "bus_transit",
         "x": 6,
         "y": 0,
@@ -216,7 +196,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "semi_truck",
         "x": 4,
         "y": 3,
@@ -225,7 +204,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "truck_delivery",
         "x": 5,
         "y": 4,
@@ -234,7 +212,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "car_taxi_yellow",
         "x": 4,
         "y": 2,
@@ -243,7 +220,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "semi_truck",
         "x": 3,
         "y": 7,
@@ -252,7 +228,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "ambulance",
         "x": 1,
         "y": 5,
@@ -274,7 +249,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 0,
         "y": 3,
@@ -283,7 +257,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "bus_transit",
         "x": 7,
         "y": 3,
@@ -292,7 +265,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "semi_truck",
         "x": 2,
         "y": 0,
@@ -301,7 +273,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "semi_truck",
         "x": 4,
         "y": 7,
@@ -310,7 +281,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "ambulance",
         "x": 0,
         "y": 4,
@@ -319,7 +289,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "car_hatchback_green",
         "x": 1,
         "y": 1,
@@ -328,7 +297,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "semi_truck",
         "x": 1,
         "y": 5,
@@ -337,7 +305,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "car_police",
         "x": 1,
         "y": 7,
@@ -346,7 +313,6 @@
         "is_player": false
       },
       {
-        "id": "v8",
         "kind": "truck_delivery",
         "x": 2,
         "y": 6,
@@ -358,7 +324,6 @@
     "par_moves": 8,
     "obstacles": [
       {
-        "id": "buoy_1",
         "x": 0,
         "y": 0,
         "width": 1,
@@ -366,7 +331,6 @@
         "kind": "buoy"
       },
       {
-        "id": "rock_1",
         "x": 6,
         "y": 6,
         "width": 1,
@@ -386,7 +350,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 1,
         "y": 3,
@@ -395,7 +358,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "bus_transit",
         "x": 5,
         "y": 0,
@@ -404,7 +366,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "truck_delivery",
         "x": 3,
         "y": 2,
@@ -413,7 +374,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "bus_transit",
         "x": 0,
         "y": 1,
@@ -422,7 +382,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "truck_delivery",
         "x": 1,
         "y": 4,
@@ -431,7 +390,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "bus_transit",
         "x": 4,
         "y": 6,
@@ -443,7 +401,6 @@
     "par_moves": 8,
     "obstacles": [
       {
-        "id": "pillar_1",
         "x": 0,
         "y": 0,
         "width": 1,
@@ -463,7 +420,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 2,
         "y": 3,
@@ -472,7 +428,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "truck_delivery",
         "x": 4,
         "y": 1,
@@ -481,7 +436,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "semi_truck",
         "x": 7,
         "y": 0,
@@ -490,7 +444,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "car_taxi_yellow",
         "x": 3,
         "y": 0,
@@ -499,7 +452,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "semi_truck",
         "x": 4,
         "y": 4,
@@ -508,7 +460,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "semi_truck",
         "x": 3,
         "y": 4,
@@ -517,7 +468,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "car_hatchback_green",
         "x": 6,
         "y": 7,
@@ -526,7 +476,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "bus_transit",
         "x": 0,
         "y": 4,
@@ -538,7 +487,6 @@
     "par_moves": 8,
     "obstacles": [
       {
-        "id": "buoy_1",
         "x": 1,
         "y": 1,
         "width": 1,
@@ -546,7 +494,6 @@
         "kind": "buoy"
       },
       {
-        "id": "buoy_2",
         "x": 5,
         "y": 5,
         "width": 1,
@@ -566,7 +513,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 0,
         "y": 3,
@@ -575,7 +521,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "bus_transit",
         "x": 2,
         "y": 2,
@@ -584,7 +529,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "bus_transit",
         "x": 7,
         "y": 0,
@@ -593,7 +537,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "bus_transit",
         "x": 0,
         "y": 6,
@@ -602,7 +545,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "limo_white",
         "x": 5,
         "y": 4,
@@ -611,7 +553,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "car_hatchback_green",
         "x": 1,
         "y": 4,
@@ -620,7 +561,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "bus_transit",
         "x": 2,
         "y": 0,
@@ -629,7 +569,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "car_police",
         "x": 3,
         "y": 4,
@@ -638,7 +577,6 @@
         "is_player": false
       },
       {
-        "id": "v8",
         "kind": "semi_truck",
         "x": 4,
         "y": 5,
@@ -660,7 +598,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 3,
         "y": 3,
@@ -669,7 +606,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "bus_transit",
         "x": 6,
         "y": 2,
@@ -678,7 +614,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "bus_transit",
         "x": 5,
         "y": 0,
@@ -687,7 +622,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "car_police",
         "x": 4,
         "y": 4,
@@ -696,7 +630,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "limo_white",
         "x": 2,
         "y": 4,
@@ -705,7 +638,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "bus_transit",
         "x": 3,
         "y": 4,
@@ -727,7 +659,6 @@
     },
     "vehicles": [
       {
-        "id": "player",
         "kind": "player_red",
         "x": 4,
         "y": 3,
@@ -736,7 +667,6 @@
         "is_player": true
       },
       {
-        "id": "v1",
         "kind": "truck_delivery",
         "x": 7,
         "y": 2,
@@ -745,7 +675,6 @@
         "is_player": false
       },
       {
-        "id": "v2",
         "kind": "bus_transit",
         "x": 6,
         "y": 1,
@@ -754,7 +683,6 @@
         "is_player": false
       },
       {
-        "id": "v3",
         "kind": "bus_transit",
         "x": 4,
         "y": 5,
@@ -763,7 +691,6 @@
         "is_player": false
       },
       {
-        "id": "v4",
         "kind": "ambulance",
         "x": 3,
         "y": 5,
@@ -772,7 +699,6 @@
         "is_player": false
       },
       {
-        "id": "v5",
         "kind": "car_hatchback_green",
         "x": 3,
         "y": 1,
@@ -781,7 +707,6 @@
         "is_player": false
       },
       {
-        "id": "v6",
         "kind": "car_sedan_blue",
         "x": 5,
         "y": 6,
@@ -790,7 +715,6 @@
         "is_player": false
       },
       {
-        "id": "v7",
         "kind": "semi_truck",
         "x": 0,
         "y": 4,

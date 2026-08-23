@@ -139,7 +139,6 @@ mod tests {
     fn test_simple_solver() {
         let vehicles = vec![
             Vehicle::new(
-                "p",
                 VehicleKind::PlayerRed,
                 1,
                 2,
@@ -148,7 +147,6 @@ mod tests {
                 true,
             ),
             Vehicle::new(
-                "c1",
                 VehicleKind::CarSedanBlue,
                 3,
                 1,
@@ -157,7 +155,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "t1",
                 VehicleKind::TruckDelivery,
                 4,
                 2,
@@ -182,7 +179,6 @@ mod tests {
     fn test_solver_with_obstacles() {
         let vehicles = vec![
             Vehicle::new(
-                "p",
                 VehicleKind::PlayerRed,
                 0,
                 2,
@@ -191,7 +187,6 @@ mod tests {
                 true,
             ),
             Vehicle::new(
-                "c1",
                 VehicleKind::CarSedanBlue,
                 3,
                 0,
@@ -208,7 +203,7 @@ mod tests {
         };
 
         // Obstacle at (3, 2) blocks the exit path for player unless c1 moves
-        let obstacles = vec![Obstacle::rock_1x1("rock", 4, 0)];
+        let obstacles = vec![Obstacle::rock_1x1(4, 0)];
 
         let result = solve(6, 6, exit, &vehicles, &obstacles);
         assert!(result.is_some(), "Puzzle with obstacle should be solvable");

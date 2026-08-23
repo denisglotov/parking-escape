@@ -652,7 +652,6 @@ mod tests {
     fn test_board_movement_and_undo() {
         let vehicles = vec![
             Vehicle::new(
-                "player",
                 VehicleKind::PlayerRed,
                 1,
                 2,
@@ -661,7 +660,6 @@ mod tests {
                 true,
             ),
             Vehicle::new(
-                "c1",
                 VehicleKind::CarSedanBlue,
                 3,
                 1,
@@ -719,7 +717,6 @@ mod tests {
     fn test_fast_slide_bump_and_emergency_vehicle() {
         let vehicles = vec![
             Vehicle::new(
-                "police",
                 VehicleKind::CarPolice,
                 0,
                 0,
@@ -728,7 +725,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "ambulance",
                 VehicleKind::Ambulance,
                 0,
                 1,
@@ -737,7 +733,6 @@ mod tests {
                 false,
             ),
             Vehicle::new(
-                "sedan",
                 VehicleKind::CarSedanBlue,
                 0,
                 2,
@@ -797,7 +792,6 @@ mod tests {
     #[test]
     fn test_vehicle_mass_and_inertia_coasting() {
         let car = Vehicle::new(
-            "c",
             VehicleKind::CarSedanBlue,
             0,
             0,
@@ -806,7 +800,6 @@ mod tests {
             false,
         );
         let truck = Vehicle::new(
-            "t",
             VehicleKind::TruckDelivery,
             0,
             1,
@@ -815,7 +808,6 @@ mod tests {
             false,
         );
         let semi = Vehicle::new(
-            "s",
             VehicleKind::SemiTruck,
             0,
             2,
@@ -855,7 +847,6 @@ mod tests {
     #[test]
     fn test_marine_theme_and_water_inertia() {
         let ship = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             0,
             0,
@@ -932,7 +923,6 @@ mod tests {
     #[test]
     fn test_marine_theme_collision_no_rebounce_and_obstacle_drift() {
         let boat_player = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             1,
             2,
@@ -941,7 +931,6 @@ mod tests {
             true,
         );
         let boat_blocker = Vehicle::new(
-            "blocker_boat",
             VehicleKind::CarSedanBlue,
             3,
             1,
@@ -1000,7 +989,6 @@ mod tests {
     #[test]
     fn test_marine_wall_collision() {
         let boat = Vehicle::new(
-            "player_boat",
             VehicleKind::PlayerRed,
             0,
             0,
@@ -1044,7 +1032,6 @@ mod tests {
     #[test]
     fn test_board_obstacles_collision_and_interaction() {
         let player = Vehicle::new(
-            "player",
             VehicleKind::PlayerRed,
             0,
             2,
@@ -1052,8 +1039,8 @@ mod tests {
             Orientation::Horizontal,
             true,
         );
-        let rock = Obstacle::rock_1x1("rock1", 3, 2);
-        let buoy = Obstacle::buoy_1x1("buoy1", 0, 0);
+        let rock = Obstacle::rock_1x1(3, 2);
+        let buoy = Obstacle::buoy_1x1(0, 0);
 
         let exit = ExitPosition {
             side: ExitSide::Right,

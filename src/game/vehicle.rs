@@ -265,7 +265,6 @@ impl DriftState {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vehicle {
-    pub id: String,
     pub kind: VehicleKind,
     pub x: i32,
     pub y: i32,
@@ -284,7 +283,6 @@ pub struct Vehicle {
 impl Vehicle {
     #[allow(dead_code)]
     pub fn new(
-        id: impl Into<String>,
         kind: VehicleKind,
         x: i32,
         y: i32,
@@ -293,7 +291,6 @@ impl Vehicle {
         is_player: bool,
     ) -> Self {
         Self {
-            id: id.into(),
             kind,
             x,
             y,

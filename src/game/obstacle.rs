@@ -28,7 +28,6 @@ const fn default_obstacle_size() -> i32 {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Obstacle {
-    pub id: String,
     pub x: i32,
     pub y: i32,
     #[serde(default = "default_obstacle_size")]
@@ -45,16 +44,8 @@ pub struct Obstacle {
 
 #[allow(dead_code)]
 impl Obstacle {
-    pub fn new(
-        id: impl Into<String>,
-        x: i32,
-        y: i32,
-        width: i32,
-        height: i32,
-        kind: Option<ObstacleKind>,
-    ) -> Self {
+    pub fn new(x: i32, y: i32, width: i32, height: i32, kind: Option<ObstacleKind>) -> Self {
         Self {
-            id: id.into(),
             x,
             y,
             width: width.max(1),
@@ -66,13 +57,13 @@ impl Obstacle {
     }
 
     /// Creates a standard 1x1 rock obstacle.
-    pub fn rock_1x1(id: impl Into<String>, x: i32, y: i32) -> Self {
-        Self::new(id, x, y, 1, 1, Some(ObstacleKind::Rock))
+    pub fn rock_1x1(x: i32, y: i32) -> Self {
+        Self::new(x, y, 1, 1, Some(ObstacleKind::Rock))
     }
 
     /// Creates a standard 1x1 marine navigation buoy obstacle.
-    pub fn buoy_1x1(id: impl Into<String>, x: i32, y: i32) -> Self {
-        Self::new(id, x, y, 1, 1, Some(ObstacleKind::Buoy))
+    pub fn buoy_1x1(x: i32, y: i32) -> Self {
+        Self::new(x, y, 1, 1, Some(ObstacleKind::Buoy))
     }
 
     /// Checks whether a given grid coordinate is occupied by this obstacle in O(1).
@@ -101,36 +92,40 @@ impl Obstacle {
         }
     }
 
-    /// Triggers a wobble/shake animation upon impact or touch.
+    /// Triggers physical impact wobble / bobbing oscillation on vehicle bump.
     pub fn trigger_wobble(&mut self, intensity: f32) {
-        self.wobble_timer = 0.55;
-        self.wobble_intensity = intensity.clamp(0.4, 1.0);
+        self.wobble_timer = 0.001;
+        self.wobble_intensity = intensity.clamp(0.2, 1.0);
     }
 
-    /// Advances wobble animation timer by `dt`. Returns true if wobble is still active.
+    /// Advances the wobble / bobbing animation timer. Returns false when animation completes.
     pub fn update(&mut self, dt: f32) -> bool {
-        if self.wobble_timer > 0.0 {
-            self.wobble_timer = (self.wobble_timer - dt).max(0.0);
-            self.wobble_timer > 0.0
-        } else {
+        if self.wobble_timer <= 0.0 {
+            return false;
+        }
+        self.wobble_timer += dt;
+        if self.wobble_timer >= 0.45 {
+            self.wobble_timer = 0.0;
+            self.wobble_intensity = 0.0;
             false
+        } else {
+            true
         }
     }
 
-    /// Computes visual pixel offset `(dx, dy)` in grid fractions for physical wobble/shake feedback.
+    /// Computes current visual pixel displacement `(offset_x, offset_y)` in grid units.
     pub fn wobble_offset(&self) -> (f32, f32) {
         if self.wobble_timer <= 0.0 {
             return (0.0, 0.0);
         }
-        let t = 1.0 - (self.wobble_timer / 0.55);
-        let decay = (1.0 - t).powi(2);
-        let wave_x = (t * std::f32::consts::PI * 8.0).sin();
-        let wave_y = (t * std::f32::consts::PI * 6.0).cos();
-        let amp = 0.12 * self.wobble_intensity * decay;
-        (wave_x * amp, wave_y * amp * 0.5)
+        let t = self.wobble_timer / 0.45;
+        let envelope = (1.0 - t).powi(2);
+        let wave = (t * std::f32::consts::PI * 3.0).sin();
+        let amp = wave * envelope * 0.12 * self.wobble_intensity;
+        (amp, amp * 0.5)
     }
 
-    /// Returns pixel bounding rectangle `(px, py, width, height)`.
+    /// Returns the pixel rectangle `(px, py, pw, ph)` for rendering this obstacle.
     pub fn pixel_bounds(
         &self,
         origin_x: f32,
@@ -152,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_obstacle_contains_cell_and_iterator() {
-        let obs = Obstacle::new("o1", 2, 3, 2, 2, Some(ObstacleKind::Rock));
+        let obs = Obstacle::new(2, 3, 2, 2, Some(ObstacleKind::Rock));
         assert!(obs.contains_cell(2, 3));
         assert!(obs.contains_cell(3, 3));
         assert!(obs.contains_cell(2, 4));
@@ -166,13 +161,13 @@ mod tests {
 
     #[test]
     fn test_obstacle_wobble_lifecycle() {
-        let mut obs = Obstacle::buoy_1x1("b1", 1, 1);
+        let mut obs = Obstacle::buoy_1x1(1, 1);
         assert_eq!(obs.wobble_offset(), (0.0, 0.0));
 
         obs.trigger_wobble(1.0);
         assert!(obs.wobble_timer > 0.0);
         let (ox, _) = obs.wobble_offset();
-        assert_eq!(ox, 0.0); // at t=0, sin(0)=0
+        assert!(ox != 0.0);
 
         assert!(obs.update(0.1));
         let (ox2, _) = obs.wobble_offset();
