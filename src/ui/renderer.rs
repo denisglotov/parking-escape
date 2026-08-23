@@ -2,7 +2,7 @@ use super::background::render_nature_background;
 use super::water_fx::{compute_vessel_buoyancy, WaterRippleManager};
 use super::{BoardLayout, TextureStore, THEME};
 use crate::game::board::{Board, ExitSide};
-use crate::game::{ObstacleKind, Theme};
+use crate::game::Theme;
 use macroquad::prelude::*;
 
 pub fn render_board(
@@ -173,97 +173,49 @@ fn render_obstacles(
     let time = get_time() as f32;
 
     for obs in &board.obstacles {
-        let effective_kind = obs.effective_kind(board.theme);
-        let (px, py, pw, ph) = obs.pixel_bounds(ox, oy, cs);
+        let (px, mut py, pw, ph) = obs.pixel_bounds(ox, oy, cs);
         let cx = px + pw * 0.5;
-        let cy = py + ph * 0.5;
+        let mut cy = py + ph * 0.5;
 
-        match effective_kind {
-            ObstacleKind::Buoy => {
-                // Subtle marine wave heave & bobbing
-                let bob_y =
-                    (time * 2.6 + obs.x as f32 * 1.5 + obs.y as f32 * 2.3).sin() * (cs * 0.04);
-                let buoy_py = py + bob_y;
-                let buoy_cy = cy + bob_y;
+        let base_sprite = obs.sprite_name(board.theme);
 
-                // 1. Underwater Drop Shadow / Moor Ring
-                let shadow_col = Color::new(0.01, 0.08, 0.16, 0.45);
-                draw_circle(
-                    cx + 2.0,
-                    buoy_cy + (pw * 0.36) * 0.35,
-                    (pw * 0.36) * 0.95,
-                    shadow_col,
-                );
+        // 1. Theme-specific dynamic wave & shadow effects
+        match board.theme {
+            Theme::Marine => {
+                let is_buoy = base_sprite.contains("buoy");
+                if is_buoy {
+                    // Subtle marine wave heave & bobbing
+                    let bob_y =
+                        (time * 2.6 + obs.x as f32 * 1.5 + obs.y as f32 * 2.3).sin() * (cs * 0.04);
+                    py += bob_y;
+                    cy += bob_y;
 
-                // 2. Water Foam / Ripple when wobbling
-                if obs.wobble_timer > 0.15 {
-                    let foam_pulse = (time * 8.0).sin() * 2.0;
-                    draw_circle_lines(
-                        cx,
-                        buoy_cy,
-                        (pw * 0.42) + foam_pulse,
-                        2.0,
-                        Color::new(0.8, 0.95, 1.0, 0.5),
+                    // Underwater Drop Shadow / Moor Ring
+                    let shadow_col = Color::new(0.01, 0.08, 0.16, 0.45);
+                    draw_circle(
+                        cx + 2.0,
+                        cy + (pw * 0.36) * 0.35,
+                        (pw * 0.36) * 0.95,
+                        shadow_col,
                     );
-                }
 
-                // 3. Draw Buoy Sprite (Red or Green channel marker)
-                let is_channel_green = (obs.x + obs.y) % 2 == 1;
-                let tex_key = if is_channel_green {
-                    "marine_buoy_green"
+                    // Water Foam / Ripple when wobbling
+                    if obs.wobble_timer > 0.15 {
+                        let foam_pulse = (time * 8.0).sin() * 2.0;
+                        draw_circle_lines(
+                            cx,
+                            cy,
+                            (pw * 0.42) + foam_pulse,
+                            2.0,
+                            Color::new(0.8, 0.95, 1.0, 0.5),
+                        );
+                    }
                 } else {
-                    "marine_buoy"
-                };
+                    // Marine rock underwater shadow
+                    let shadow_col = Color::new(0.01, 0.08, 0.18, 0.45);
+                    draw_ellipse(cx + 2.0, cy + 3.0, pw * 0.42, ph * 0.38, 0.0, shadow_col);
 
-                if let Some(tex) = textures.get(tex_key) {
-                    draw_texture_ex(
-                        tex,
-                        px,
-                        buoy_py,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(pw, ph)),
-                            ..Default::default()
-                        },
-                    );
-                } else {
-                    let col = if is_channel_green {
-                        Color::new(0.08, 0.68, 0.38, 1.0)
-                    } else {
-                        Color::new(0.92, 0.28, 0.22, 1.0)
-                    };
-                    draw_circle(cx, buoy_cy, pw * 0.38, col);
-                }
-
-                // 4. Flashing Hazard Beacon Glow Overlay
-                let beacon_y = buoy_cy - pw * 0.22;
-                let blink_phase = (time * 4.5 + (obs.x * 3 + obs.y * 7) as f32).sin();
-                if blink_phase > -0.2 {
-                    let glow_alpha = ((blink_phase + 0.2) / 1.2).clamp(0.0, 1.0);
-                    let glow_col = if is_channel_green {
-                        Color::new(0.2, 1.0, 0.5, 0.55 * glow_alpha)
-                    } else {
-                        Color::new(1.0, 0.85, 0.25, 0.55 * glow_alpha)
-                    };
-                    draw_circle(cx, beacon_y, pw * 0.18, glow_col);
-                    draw_circle(cx, beacon_y, pw * 0.08, WHITE);
-                }
-            }
-            ObstacleKind::Rock => {
-                let tex_key = match board.theme {
-                    Theme::Marine => "marine_rock",
-                    Theme::City => "city_rock",
-                };
-
-                // 1. Cast Drop Shadow
-                let shadow_col = match board.theme {
-                    Theme::Marine => Color::new(0.01, 0.08, 0.18, 0.45),
-                    Theme::City => Color::new(0.0, 0.0, 0.0, 0.40),
-                };
-                draw_ellipse(cx + 2.0, cy + 3.0, pw * 0.42, ph * 0.38, 0.0, shadow_col);
-
-                // 2. Shoreline Foam Wash in Marine Theme
-                if board.theme == Theme::Marine {
+                    // Shoreline Foam Wash
                     let wave_pulse = (time * 3.2 + obs.x as f32 * 2.1).sin() * 1.5;
                     draw_ellipse_lines(
                         cx,
@@ -275,86 +227,68 @@ fn render_obstacles(
                         Color::new(0.75, 0.92, 1.0, 0.55),
                     );
                 }
-
-                // 3. Draw Rock Sprite Texture
-                if let Some(tex) = textures.get(tex_key) {
-                    draw_texture_ex(
-                        tex,
-                        px,
-                        py,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(pw, ph)),
-                            ..Default::default()
-                        },
-                    );
+            }
+            Theme::City => {
+                // Cast asphalt drop shadow
+                let shadow_col = Color::new(0.0, 0.0, 0.0, 0.40);
+                if base_sprite == "city_barrier" {
+                    draw_rectangle(px + 4.0, py + 4.0, pw - 8.0, ph - 8.0, shadow_col);
+                } else if base_sprite == "city_pillar" {
+                    draw_circle(cx + 2.0, cy + 3.0, pw * 0.42, shadow_col);
                 } else {
-                    draw_ellipse(
-                        cx,
-                        cy,
-                        pw * 0.42,
-                        ph * 0.38,
-                        0.0,
-                        Color::new(0.35, 0.38, 0.45, 1.0),
-                    );
+                    draw_ellipse(cx + 2.0, cy + 3.0, pw * 0.42, ph * 0.38, 0.0, shadow_col);
                 }
             }
-            ObstacleKind::Pillar => {
-                // Cast drop shadow
-                draw_circle(
-                    cx + 2.0,
-                    cy + 3.0,
-                    pw * 0.42,
-                    Color::new(0.0, 0.0, 0.0, 0.40),
-                );
+        }
 
-                if let Some(tex) = textures.get("city_pillar") {
-                    draw_texture_ex(
-                        tex,
-                        px,
-                        py,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(pw, ph)),
-                            ..Default::default()
-                        },
-                    );
-                } else {
-                    draw_circle(cx, cy, pw * 0.40, Color::new(0.45, 0.48, 0.55, 1.0));
-                }
-            }
-            ObstacleKind::Barrier => {
-                // Cast drop shadow
-                draw_rectangle(
-                    px + 4.0,
-                    py + 4.0,
-                    pw - 8.0,
-                    ph - 8.0,
-                    Color::new(0.0, 0.0, 0.0, 0.40),
-                );
+        // 2. Resolve final sprite key (handling buoy channel color variation)
+        let is_channel_green = (obs.x + obs.y) % 2 == 1;
+        let sprite_key = if base_sprite == "marine_buoy" && is_channel_green {
+            "marine_buoy_green"
+        } else {
+            base_sprite
+        };
 
-                if let Some(tex) = textures.get("city_barrier") {
-                    draw_texture_ex(
-                        tex,
-                        px,
-                        py,
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(pw, ph)),
-                            ..Default::default()
-                        },
-                    );
-                } else {
-                    draw_rectangle(
-                        px + 2.0,
-                        py + 2.0,
-                        pw - 4.0,
-                        ph - 4.0,
-                        Color::new(0.7, 0.7, 0.7, 1.0),
-                    );
+        // 3. Draw Sprite Texture with fallback
+        if let Some(tex) = textures.get(sprite_key) {
+            draw_texture_ex(
+                tex,
+                px,
+                py,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(pw, ph)),
+                    ..Default::default()
+                },
+            );
+        } else {
+            let col = match board.theme {
+                Theme::Marine => {
+                    if is_channel_green {
+                        Color::new(0.08, 0.68, 0.38, 1.0)
+                    } else {
+                        Color::new(0.92, 0.28, 0.22, 1.0)
+                    }
                 }
+                Theme::City => Color::new(0.35, 0.38, 0.45, 1.0),
+            };
+            draw_ellipse(cx, cy, pw * 0.40, ph * 0.38, 0.0, col);
+        }
+
+        // 4. Flashing Hazard Beacon Glow Overlay on marine buoys
+        if board.theme == Theme::Marine && base_sprite.contains("buoy") {
+            let beacon_y = cy - pw * 0.22;
+            let blink_phase = (time * 4.5 + (obs.x * 3 + obs.y * 7) as f32).sin();
+            if blink_phase > -0.2 {
+                let glow_alpha = ((blink_phase + 0.2) / 1.2).clamp(0.0, 1.0);
+                let glow_col = if is_channel_green {
+                    Color::new(0.2, 1.0, 0.5, 0.55 * glow_alpha)
+                } else {
+                    Color::new(1.0, 0.85, 0.25, 0.55 * glow_alpha)
+                };
+                draw_circle(cx, beacon_y, pw * 0.18, glow_col);
+                draw_circle(cx, beacon_y, pw * 0.08, WHITE);
             }
-            ObstacleKind::Unknown => {}
         }
     }
 }

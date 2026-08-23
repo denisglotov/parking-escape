@@ -20,6 +20,33 @@ impl ObstacleKind {
             Theme::City => Self::Rock,
         }
     }
+
+    pub const fn city_sprite_name(&self) -> &'static str {
+        match self {
+            Self::Rock => "city_rock",
+            Self::Pillar => "city_pillar",
+            Self::Barrier => "city_barrier",
+            Self::Buoy => "city_pillar",
+            Self::Unknown => "city_rock",
+        }
+    }
+
+    pub const fn marine_sprite_name(&self) -> &'static str {
+        match self {
+            Self::Rock => "marine_rock",
+            Self::Barrier => "marine_rock",
+            Self::Buoy => "marine_buoy",
+            Self::Pillar => "marine_buoy",
+            Self::Unknown => "marine_buoy",
+        }
+    }
+
+    pub const fn sprite_for_theme(&self, theme: Theme) -> &'static str {
+        match theme {
+            Theme::City => self.city_sprite_name(),
+            Theme::Marine => self.marine_sprite_name(),
+        }
+    }
 }
 
 const fn default_obstacle_size() -> i32 {
@@ -66,6 +93,13 @@ impl Obstacle {
         Self::new(x, y, 1, 1, Some(ObstacleKind::Buoy))
     }
 
+    /// Returns the sprite name for this obstacle given the active theme.
+    pub fn sprite_name(&self, theme: Theme) -> &'static str {
+        self.kind
+            .unwrap_or_else(|| ObstacleKind::default_for_theme(theme))
+            .sprite_for_theme(theme)
+    }
+
     /// Checks whether a given grid coordinate is occupied by this obstacle in O(1).
     pub fn contains_cell(&self, cell_x: i32, cell_y: i32) -> bool {
         cell_x >= self.x
@@ -82,14 +116,6 @@ impl Obstacle {
         let height = self.height;
 
         (0..height).flat_map(move |dy| (0..width).map(move |dx| (min_x + dx, min_y + dy)))
-    }
-
-    /// Determines the concrete visual kind of this obstacle, resolving defaults based on the theme.
-    pub fn effective_kind(&self, theme: Theme) -> ObstacleKind {
-        match self.kind {
-            Some(ObstacleKind::Unknown) | None => ObstacleKind::default_for_theme(theme),
-            Some(concrete) => concrete,
-        }
     }
 
     /// Triggers physical impact wobble / bobbing oscillation on vehicle bump.
@@ -175,5 +201,43 @@ mod tests {
 
         assert!(!obs.update(0.5));
         assert_eq!(obs.wobble_offset(), (0.0, 0.0));
+    }
+
+    #[test]
+    fn test_obstacle_theme_conversion() {
+        // Marine sprite conversions
+        assert_eq!(ObstacleKind::Pillar.marine_sprite_name(), "marine_buoy");
+        assert_eq!(ObstacleKind::Barrier.marine_sprite_name(), "marine_rock");
+        assert_eq!(ObstacleKind::Rock.marine_sprite_name(), "marine_rock");
+        assert_eq!(ObstacleKind::Buoy.marine_sprite_name(), "marine_buoy");
+
+        // City sprite conversions
+        assert_eq!(ObstacleKind::Buoy.city_sprite_name(), "city_pillar");
+        assert_eq!(ObstacleKind::Pillar.city_sprite_name(), "city_pillar");
+        assert_eq!(ObstacleKind::Barrier.city_sprite_name(), "city_barrier");
+        assert_eq!(ObstacleKind::Rock.city_sprite_name(), "city_rock");
+
+        // Unified sprite_for_theme method
+        assert_eq!(
+            ObstacleKind::Pillar.sprite_for_theme(Theme::Marine),
+            "marine_buoy"
+        );
+        assert_eq!(
+            ObstacleKind::Pillar.sprite_for_theme(Theme::City),
+            "city_pillar"
+        );
+
+        // Sprite name on Obstacle struct
+        let pillar_obs = Obstacle::new(0, 0, 1, 1, Some(ObstacleKind::Pillar));
+        assert_eq!(pillar_obs.sprite_name(Theme::Marine), "marine_buoy");
+        assert_eq!(pillar_obs.sprite_name(Theme::City), "city_pillar");
+
+        let barrier_obs = Obstacle::new(0, 0, 1, 1, Some(ObstacleKind::Barrier));
+        assert_eq!(barrier_obs.sprite_name(Theme::Marine), "marine_rock");
+        assert_eq!(barrier_obs.sprite_name(Theme::City), "city_barrier");
+
+        let unspecified_obs = Obstacle::new(0, 0, 1, 1, None);
+        assert_eq!(unspecified_obs.sprite_name(Theme::Marine), "marine_buoy");
+        assert_eq!(unspecified_obs.sprite_name(Theme::City), "city_rock");
     }
 }
