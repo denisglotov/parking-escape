@@ -1,0 +1,26 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+line-length = 120
+
+[tool.autopep8]
+max_line_length = 120
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylsp.plugins.pycodestyle]
+maxLineLength = 120
+ignore = ["E203", "W503"]
+
+[tool.pylsp.plugins.flake8]
+maxLineLength = 120
+enabled = true
