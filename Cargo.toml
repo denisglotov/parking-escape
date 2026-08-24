@@ -1,14 +1,9 @@
-
 [package]
-name = "parking-escape"
-version = "0.1.0"
+name = "parkingescape"
+version = "0.2.0"
 edition = "2021"
 authors = ["Dymka"]
 description = "Parking Escape - Dynamic Sliding-Block Logic Puzzle Game"
-
-[[bin]]
-name = "parkingescape"
-path = "src/main.rs"
 
 [dependencies]
 macroquad = "0.4"
@@ -19,6 +14,11 @@ serde_json = "1.0"
 macroquad = { version = "0.4", features = ["audio"] }
 
 [package.metadata.android]
+package_name = "org.dymka.parkingescape"
+label = "Parking Escape"
+version_code = 1
+version_name = "0.2.0"
+
 android_version = 36
 target_sdk_version = 36
 min_sdk_version = 23
@@ -26,13 +26,6 @@ assets = "assets/"
 res = "res"
 icon = "@mipmap/ic_launcher"
 build_targets = ["aarch64-linux-android"]
-
-[[package.metadata.android.bin]]
-name = "parkingescape"
-package_name = "org.dymka.parkingescape"
-label = "Parking Escape"
-version_code = 1
-version_name = "0.1.0"
 
 [package.metadata.android.application_attributes]
 "android:localeConfig" = "@xml/locales_config"

@@ -305,8 +305,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "parking-escape"
-version = "0.1.0"
+name = "parkingescape"
+version = "0.2.0"
 dependencies = [
  "macroquad",
  "serde",
