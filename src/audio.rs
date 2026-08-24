@@ -220,6 +220,20 @@ impl SoundManager {
         }
     }
 
+    /// Plays a game sound trigger and any associated compound effects (e.g. Bump with Alarm/Siren, ExitDrive with Win).
+    pub fn play_game_trigger(&self, trigger: SoundTrigger, theme: Theme) {
+        if !self.enabled {
+            return;
+        }
+        if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
+            self.backend.play(SoundTrigger::Bump, theme);
+        }
+        self.backend.play(trigger, theme);
+        if trigger == SoundTrigger::Win {
+            self.backend.play(SoundTrigger::ExitDrive, theme);
+        }
+    }
+
     pub fn toggle_sound(&mut self) {
         self.enabled = !self.enabled;
     }

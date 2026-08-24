@@ -70,14 +70,16 @@ fn generate_next_states(
             let veh = &vehicles[idx];
             let (vlen, orient) = (veh.length, veh.orientation);
 
-            let own_cells: HashSet<(i32, i32)> = orient.cells(vx, vy, vlen).collect();
-
             let is_cell_free = |cx: i32, cy: i32| {
+                let in_own_vehicle = match orient {
+                    Orientation::Horizontal => cy == vy && cx >= vx && cx < vx + vlen,
+                    Orientation::Vertical => cx == vx && cy >= vy && cy < vy + vlen,
+                };
                 cx >= 0
                     && cx < width
                     && cy >= 0
                     && cy < height
-                    && (!occupied.contains(&(cx, cy)) || own_cells.contains(&(cx, cy)))
+                    && (!occupied.contains(&(cx, cy)) || in_own_vehicle)
             };
 
             let mut valid_moves = Vec::new();

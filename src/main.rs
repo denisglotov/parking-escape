@@ -3,7 +3,9 @@ mod game;
 mod ui;
 
 use audio::{SoundManager, SoundTrigger};
-use game::level::{DifficultyTier, FieldSize, LevelRecord, LevelRepository, PackKey};
+use game::level::{
+    load_records, save_records, DifficultyTier, FieldSize, LevelRecord, LevelRepository, PackKey,
+};
 use game::Board;
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -41,7 +43,7 @@ async fn main() {
     let repo = LevelRepository::load_embedded().expect("Failed to load embedded level packs");
     let mut water_ripples = WaterRippleManager::new();
 
-    let mut records: HashMap<(PackKey, usize), LevelRecord> = HashMap::new();
+    let mut records: HashMap<(PackKey, usize), LevelRecord> = load_records();
     let mut current_pack = PackKey::new(FieldSize::Small6x6, DifficultyTier::Relaxed);
     let mut current_level_idx = 0;
     let mut level_select_state = LevelSelectState::default();
@@ -157,30 +159,17 @@ async fn main() {
                                     1.0,
                                 );
                             }
-                            sound.play(SoundTrigger::Bump, current_board.theme);
-                            sound.play(trigger, current_board.theme);
+                            sound.play_game_trigger(trigger, current_board.theme);
                         }
                     } else if is_mouse_button_released(MouseButton::Left) {
                         if let Some(trigger) = current_board.handle_touch_up() {
-                            if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
-                                sound.play(SoundTrigger::Bump, current_board.theme);
-                            }
-                            sound.play(trigger, current_board.theme);
-                            if trigger == SoundTrigger::Win {
-                                sound.play(SoundTrigger::ExitDrive, current_board.theme);
-                            }
+                            sound.play_game_trigger(trigger, current_board.theme);
                         }
                     }
 
                     // Update board physics, vehicle inertia coasting, and animations
                     if let Some(trigger) = current_board.update(dt) {
-                        if trigger == SoundTrigger::Alarm || trigger == SoundTrigger::Siren {
-                            sound.play(SoundTrigger::Bump, current_board.theme);
-                        }
-                        sound.play(trigger, current_board.theme);
-                        if trigger == SoundTrigger::Win {
-                            sound.play(SoundTrigger::ExitDrive, current_board.theme);
-                        }
+                        sound.play_game_trigger(trigger, current_board.theme);
                     }
 
                     // Update water ripples
@@ -196,6 +185,7 @@ async fn main() {
                                 current_board.move_count,
                                 current_level.calculate_stars(current_board.move_count),
                             );
+                        save_records(&records);
 
                         scene = AppScene::LevelComplete;
                     }
@@ -205,33 +195,37 @@ async fn main() {
                 render_board(&current_board, &layout, &textures, &water_ripples);
 
                 // Render Top HUD
-                match render_hud(
+                let hud_action = render_hud(
                     current_level,
                     current_board.move_count,
-                    !current_board.history.is_empty(),
+                    !current_board.history.is_empty() && scene == AppScene::Playing,
                     sound.enabled,
                     &textures,
                     screen_w,
-                ) {
-                    HudAction::BackToMenu => {
-                        sound.play(SoundTrigger::ButtonClick, current_board.theme);
-                        level_select_state.reset();
-                        scene = AppScene::LevelSelect;
-                    }
-                    HudAction::Undo => {
-                        if current_board.undo() {
-                            sound.play(SoundTrigger::Slide, current_board.theme);
+                );
+
+                if scene == AppScene::Playing {
+                    match hud_action {
+                        HudAction::BackToMenu => {
+                            sound.play(SoundTrigger::ButtonClick, current_board.theme);
+                            level_select_state.reset();
+                            scene = AppScene::LevelSelect;
                         }
+                        HudAction::Undo => {
+                            if current_board.undo() {
+                                sound.play(SoundTrigger::Slide, current_board.theme);
+                            }
+                        }
+                        HudAction::Reset => {
+                            sound.play(SoundTrigger::ButtonClick, current_board.theme);
+                            current_board.reset();
+                            water_ripples.clear();
+                        }
+                        HudAction::ToggleSound => {
+                            sound.toggle_sound();
+                        }
+                        HudAction::None => {}
                     }
-                    HudAction::Reset => {
-                        sound.play(SoundTrigger::ButtonClick, current_board.theme);
-                        current_board.reset();
-                        water_ripples.clear();
-                    }
-                    HudAction::ToggleSound => {
-                        sound.toggle_sound();
-                    }
-                    HudAction::None => {}
                 }
 
                 // Render Win Modal if game is completed

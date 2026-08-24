@@ -194,9 +194,9 @@ impl Board {
         (min_offset, max_offset)
     }
 
-    /// Finds the index of the other vehicle that is acting as an obstacle for `vehicle_idx`
-    /// in the direction of `impact_dir`. Returns None if hitting the board boundary.
-    pub fn find_obstacle_vehicle(&self, vehicle_idx: usize, impact_dir: f32) -> Option<usize> {
+    /// Computes the grid coordinate directly adjacent to `vehicle_idx` in the direction of `impact_dir`
+    /// at the limit of its allowed movement range.
+    pub fn target_cell_at_limit(&self, vehicle_idx: usize, impact_dir: f32) -> (i32, i32) {
         let v = &self.vehicles[vehicle_idx];
         let (min_bound, max_bound) = self.compute_movement_bounds(vehicle_idx);
         let offset = if impact_dir >= 0.0 {
@@ -205,12 +205,18 @@ impl Board {
             min_bound
         };
 
-        let (target_x, target_y) = match (v.orientation, impact_dir >= 0.0) {
+        match (v.orientation, impact_dir >= 0.0) {
             (Orientation::Horizontal, true) => (v.x + offset + v.length, v.y),
             (Orientation::Horizontal, false) => (v.x + offset - 1, v.y),
             (Orientation::Vertical, true) => (v.x, v.y + offset + v.length),
             (Orientation::Vertical, false) => (v.x, v.y + offset - 1),
-        };
+        }
+    }
+
+    /// Finds the index of the other vehicle that is acting as an obstacle for `vehicle_idx`
+    /// in the direction of `impact_dir`. Returns None if hitting the board boundary.
+    pub fn find_obstacle_vehicle(&self, vehicle_idx: usize, impact_dir: f32) -> Option<usize> {
+        let (target_x, target_y) = self.target_cell_at_limit(vehicle_idx, impact_dir);
 
         if !self.is_inside_board(target_x, target_y) {
             return None;
@@ -248,22 +254,9 @@ impl Board {
             enable_bounce,
         ));
 
+        let (target_x, target_y) = self.target_cell_at_limit(vehicle_idx, impact_dir);
+
         // If hitting a static obstacle, trigger wobble/shake feedback on that obstacle
-        let v = &self.vehicles[vehicle_idx];
-        let (min_bound, max_bound) = self.compute_movement_bounds(vehicle_idx);
-        let offset = if impact_dir >= 0.0 {
-            max_bound
-        } else {
-            min_bound
-        };
-
-        let (target_x, target_y) = match (v.orientation, impact_dir >= 0.0) {
-            (Orientation::Horizontal, true) => (v.x + offset + v.length, v.y),
-            (Orientation::Horizontal, false) => (v.x + offset - 1, v.y),
-            (Orientation::Vertical, true) => (v.x, v.y + offset + v.length),
-            (Orientation::Vertical, false) => (v.x, v.y + offset - 1),
-        };
-
         if let Some(obs_idx) = self.find_obstacle_at(target_x, target_y) {
             let intensity = (velocity.abs() / 9.0).clamp(0.5, 1.0);
             self.obstacles[obs_idx].trigger_wobble(intensity);
@@ -569,7 +562,7 @@ impl Board {
             }
         }
 
-        // 2. Advance Inertia Coasting physics
+        // 3. Advance Inertia Coasting physics
         if let Some(coast) = &mut self.active_coast {
             let v_idx = coast.vehicle_index;
             let mass = self.vehicles[v_idx].mass();
@@ -626,7 +619,7 @@ impl Board {
             }
         }
 
-        // 3. Update exit animation if won
+        // 4. Update exit animation if won
         self.update_exit_animation(dt);
 
         sound_trigger

@@ -135,6 +135,66 @@ impl LevelRecord {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressEntry {
+    pub pack: PackKey,
+    pub index: usize,
+    pub record: LevelRecord,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct GameProgress {
+    pub entries: Vec<ProgressEntry>,
+}
+
+impl GameProgress {
+    pub fn from_records(records: &HashMap<(PackKey, usize), LevelRecord>) -> Self {
+        let entries = records
+            .iter()
+            .map(|(&(pack, index), record)| ProgressEntry {
+                pack,
+                index,
+                record: record.clone(),
+            })
+            .collect();
+        Self { entries }
+    }
+
+    #[allow(dead_code)]
+    pub fn to_records(&self) -> HashMap<(PackKey, usize), LevelRecord> {
+        self.entries
+            .iter()
+            .map(|entry| ((entry.pack, entry.index), entry.record.clone()))
+            .collect()
+    }
+}
+
+pub fn save_records(records: &HashMap<(PackKey, usize), LevelRecord>) {
+    let progress = GameProgress::from_records(records);
+    if let Ok(json) = serde_json::to_string(&progress) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let _ = std::fs::write("save_data.json", json);
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            let _ = json;
+        }
+    }
+}
+
+pub fn load_records() -> HashMap<(PackKey, usize), LevelRecord> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if let Ok(content) = std::fs::read_to_string("save_data.json") {
+            if let Ok(progress) = serde_json::from_str::<GameProgress>(&content) {
+                return progress.to_records();
+            }
+        }
+    }
+    HashMap::new()
+}
+
 /// Mixes levels from multiple difficulty buckets in round-robin zig-zag manner,
 /// renumbering the resulting levels sequentially.
 pub fn mix_zigzag(buckets: &[Vec<LevelData>]) -> Vec<LevelData> {
@@ -332,5 +392,25 @@ mod tests {
                 size
             );
         }
+    }
+
+    #[test]
+    fn test_game_progress_roundtrip() {
+        let mut records = HashMap::new();
+        let key = PackKey::new(FieldSize::Small6x6, DifficultyTier::Relaxed);
+        let mut rec = LevelRecord::default();
+        rec.record_win(5, 3);
+        records.insert((key, 0), rec);
+
+        let progress = GameProgress::from_records(&records);
+        let json = serde_json::to_string(&progress).expect("Serialization failed");
+        let decoded: GameProgress = serde_json::from_str(&json).expect("Deserialization failed");
+        let restored = decoded.to_records();
+
+        assert_eq!(restored.len(), 1);
+        let r = restored.get(&(key, 0)).unwrap();
+        assert!(r.completed);
+        assert_eq!(r.stars, 3);
+        assert_eq!(r.best_moves, Some(5));
     }
 }
