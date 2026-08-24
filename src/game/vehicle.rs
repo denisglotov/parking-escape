@@ -128,8 +128,8 @@ impl VehicleKind {
             (Self::CarHatchbackGreen, Orientation::Horizontal) => "train_shunter_green_h",
             (Self::CarHatchbackGreen, Orientation::Vertical) => "train_shunter_green_v",
 
-            (Self::CarPolice, Orientation::Horizontal) => "train_patrol_railcar_h",
-            (Self::CarPolice, Orientation::Vertical) => "train_patrol_railcar_v",
+            (Self::CarPolice, Orientation::Horizontal) => "train_caboose_red_h",
+            (Self::CarPolice, Orientation::Vertical) => "train_caboose_red_v",
 
             (Self::TruckDelivery, Orientation::Horizontal) => "train_cargo_flat_h",
             (Self::TruckDelivery, Orientation::Vertical) => "train_cargo_flat_v",
@@ -137,8 +137,8 @@ impl VehicleKind {
             (Self::LimoWhite, Orientation::Horizontal) => "train_luxury_pullman_h",
             (Self::LimoWhite, Orientation::Vertical) => "train_luxury_pullman_v",
 
-            (Self::Ambulance, Orientation::Horizontal) => "train_rescue_crane_h",
-            (Self::Ambulance, Orientation::Vertical) => "train_rescue_crane_v",
+            (Self::Ambulance, Orientation::Horizontal) => "train_heavy_crane_h",
+            (Self::Ambulance, Orientation::Vertical) => "train_heavy_crane_v",
 
             (Self::SemiTruck, Orientation::Horizontal) => "train_coal_hopper_h",
             (Self::SemiTruck, Orientation::Vertical) => "train_coal_hopper_v",
@@ -443,6 +443,14 @@ mod tests {
         assert_eq!(
             VehicleKind::CarSedanBlue.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
             "train_coach_blue_h"
+        );
+        assert_eq!(
+            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_caboose_red_h"
+        );
+        assert_eq!(
+            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_heavy_crane_h"
         );
         assert_eq!(
             VehicleKind::SemiTruck.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),

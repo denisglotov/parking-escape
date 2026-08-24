@@ -349,8 +349,8 @@ impl TextureStore {
         load_rail_veh!("train_shunter_green_h", "train_shunter_green_h.png");
         load_rail_veh!("train_shunter_green_v", "train_shunter_green_v.png");
 
-        load_rail_veh!("train_patrol_railcar_h", "train_patrol_railcar_h.png");
-        load_rail_veh!("train_patrol_railcar_v", "train_patrol_railcar_v.png");
+        load_rail_veh!("train_caboose_red_h", "train_caboose_red_h.png");
+        load_rail_veh!("train_caboose_red_v", "train_caboose_red_v.png");
 
         load_rail_veh!("train_cargo_flat_h", "train_cargo_flat_h.png");
         load_rail_veh!("train_cargo_flat_v", "train_cargo_flat_v.png");
@@ -358,8 +358,8 @@ impl TextureStore {
         load_rail_veh!("train_luxury_pullman_h", "train_luxury_pullman_h.png");
         load_rail_veh!("train_luxury_pullman_v", "train_luxury_pullman_v.png");
 
-        load_rail_veh!("train_rescue_crane_h", "train_rescue_crane_h.png");
-        load_rail_veh!("train_rescue_crane_v", "train_rescue_crane_v.png");
+        load_rail_veh!("train_heavy_crane_h", "train_heavy_crane_h.png");
+        load_rail_veh!("train_heavy_crane_v", "train_heavy_crane_v.png");
 
         load_rail_veh!("train_coal_hopper_h", "train_coal_hopper_h.png");
         load_rail_veh!("train_coal_hopper_v", "train_coal_hopper_v.png");
