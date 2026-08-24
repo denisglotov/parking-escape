@@ -32,7 +32,7 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
         let fallback_color = match board.theme {
             Theme::Marine => Color::new(0.12, 0.38, 0.58, 1.0),
             Theme::City => Color::new(0.12, 0.22, 0.14, 1.0),
-            Theme::Railroad => Color::new(0.14, 0.20, 0.14, 1.0),
+            Theme::Railroad => Color::new(0.20, 0.38, 0.22, 1.0),
         };
         draw_rectangle(0.0, start_y, sw, area_h, fallback_color);
     }
@@ -91,7 +91,7 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         let fallback_color = match board.theme {
             Theme::Marine => Color::new(0.15, 0.46, 0.70, 1.0),
             Theme::City => ROAD_ASPHALT,
-            Theme::Railroad => Color::new(0.10, 0.09, 0.09, 1.0),
+            Theme::Railroad => Color::new(0.30, 0.28, 0.26, 1.0),
         };
         draw_rectangle(rx, ry, rw, rh, fallback_color);
     }
@@ -106,8 +106,8 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         ),
         Theme::City => (ROAD_CURB, ROAD_MARKING, 12.0, 8.0),
         Theme::Railroad => (
-            Color::new(0.28, 0.18, 0.12, 1.0),
-            Color::new(0.35, 0.38, 0.42, 0.8),
+            Color::new(0.38, 0.26, 0.18, 1.0),
+            Color::new(0.45, 0.48, 0.52, 0.8),
             14.0,
             10.0,
         ),
@@ -129,14 +129,14 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
                     ry + cs * 0.08,
                     tie_w,
                     cs * 0.84,
-                    Color::new(0.12, 0.08, 0.05, 0.85),
+                    Color::new(0.24, 0.16, 0.10, 0.90),
                 );
                 tx += tie_w + tie_gap;
             }
-            // Draw dual steel rails (dark weathered steel)
+            // Draw dual steel rails (weathered steel with bright crown)
             let rail_thick = (cs * 0.08).max(3.0);
-            let rail_col = Color::new(0.22, 0.23, 0.26, 0.90);
-            let rail_shine = Color::new(0.38, 0.40, 0.45, 0.50);
+            let rail_col = Color::new(0.18, 0.20, 0.24, 0.90);
+            let rail_shine = Color::new(0.55, 0.60, 0.68, 0.65);
             draw_rectangle(rx, ry + cs * 0.20, rw, rail_thick, rail_col);
             draw_rectangle(rx, ry + cs * 0.20 + 1.0, rw, rail_thick * 0.35, rail_shine);
             draw_rectangle(rx, ry + cs * 0.80 - rail_thick, rw, rail_thick, rail_col);
@@ -173,14 +173,14 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
                     ty,
                     cs * 0.84,
                     tie_h,
-                    Color::new(0.12, 0.08, 0.05, 0.85),
+                    Color::new(0.24, 0.16, 0.10, 0.90),
                 );
                 ty += tie_h + tie_gap;
             }
-            // Draw dual steel rails (dark weathered steel)
+            // Draw dual steel rails (weathered steel with bright crown)
             let rail_thick = (cs * 0.08).max(3.0);
-            let rail_col = Color::new(0.22, 0.23, 0.26, 0.90);
-            let rail_shine = Color::new(0.38, 0.40, 0.45, 0.50);
+            let rail_col = Color::new(0.18, 0.20, 0.24, 0.90);
+            let rail_shine = Color::new(0.55, 0.60, 0.68, 0.65);
             draw_rectangle(rx + cs * 0.20, ry, rail_thick, rh, rail_col);
             draw_rectangle(rx + cs * 0.20 + 1.0, ry, rail_thick * 0.35, rh, rail_shine);
             draw_rectangle(rx + cs * 0.80 - rail_thick, ry, rail_thick, rh, rail_col);

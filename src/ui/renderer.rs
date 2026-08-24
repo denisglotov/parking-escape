@@ -81,12 +81,12 @@ pub fn render_board(
                     },
                 );
             } else {
-                draw_rectangle(ox, oy, bw, bh, Color::new(0.10, 0.09, 0.09, 1.0));
+                draw_rectangle(ox, oy, bw, bh, Color::new(0.30, 0.28, 0.26, 1.0));
             }
 
             // Draw Wooden Cross-Ties (Sleepers) across grid cells (dark creosote timber)
-            let tie_col = Color::new(0.12, 0.08, 0.05, 0.75);
-            let tie_shine = Color::new(0.18, 0.12, 0.07, 0.45);
+            let tie_col = Color::new(0.24, 0.16, 0.10, 0.85);
+            let tie_shine = Color::new(0.34, 0.22, 0.14, 0.50);
             for gx in 0..board.width {
                 for gy in 0..board.height {
                     let cx = ox + gx as f32 * cs;
@@ -103,9 +103,9 @@ pub fn render_board(
                 }
             }
 
-            // Draw Steel Rail Lines along Grid Rows and Columns (dark weathered steel)
-            let rail_col = Color::new(0.22, 0.23, 0.26, 0.75);
-            let rail_shine = Color::new(0.38, 0.40, 0.45, 0.40);
+            // Draw Steel Rail Lines along Grid Rows and Columns (weathered steel with bright crown)
+            let rail_col = Color::new(0.18, 0.20, 0.24, 0.85);
+            let rail_shine = Color::new(0.55, 0.60, 0.68, 0.65);
             for gx in 0..board.width {
                 let rx1 = ox + gx as f32 * cs + cs * 0.20;
                 let rx2 = ox + gx as f32 * cs + cs * 0.80;
@@ -128,7 +128,7 @@ pub fn render_board(
                 for gy in 1..board.height {
                     let mx = ox + gx as f32 * cs;
                     let my = oy + gy as f32 * cs;
-                    draw_circle(mx, my, 2.0, Color::new(0.28, 0.30, 0.34, 0.50));
+                    draw_circle(mx, my, 2.0, Color::new(0.20, 0.22, 0.26, 0.70));
                 }
             }
         }
