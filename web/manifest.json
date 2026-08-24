@@ -1,0 +1,30 @@
+{
+  "name": "Parking Escape - Dynamic Sliding Logic Puzzle",
+  "short_name": "Parking Escape",
+  "description": "Parking Escape - dynamic sliding-block logic puzzle game written in Rust & Macroquad, compiled to WebAssembly.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080C14",
+  "theme_color": "#080C14",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["games", "puzzle", "logic"]
+}
