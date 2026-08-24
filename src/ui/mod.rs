@@ -292,6 +292,81 @@ impl TextureStore {
         load_marine_veh!("ship_ferry_h", "ship_ferry_h.png");
         load_marine_veh!("ship_ferry_v", "ship_ferry_v.png");
 
+        // Railroad Environment textures
+        load_tex!(
+            "railroad_background",
+            "../../assets/themes/railroad/environment/background.png"
+        );
+        load_tex!(
+            "railroad_ground",
+            "../../assets/themes/railroad/environment/ground.png"
+        );
+        load_tex!(
+            "railroad_exit_gate",
+            "../../assets/themes/railroad/environment/exit_gate.png"
+        );
+
+        // Railroad Obstacle textures
+        load_tex!(
+            "railroad_buffer_stop",
+            "../../assets/themes/railroad/obstacles/buffer_stop.png"
+        );
+        load_tex!(
+            "railroad_coal_pile",
+            "../../assets/themes/railroad/obstacles/coal_pile.png"
+        );
+        load_tex!(
+            "railroad_semaphore",
+            "../../assets/themes/railroad/obstacles/semaphore.png"
+        );
+        load_tex!(
+            "railroad_rock",
+            "../../assets/themes/railroad/obstacles/rock.png"
+        );
+
+        // Railroad Rolling Stock textures (both H and V)
+        macro_rules! load_rail_veh {
+            ($key:expr, $file:expr) => {
+                textures.insert(
+                    $key.to_string(),
+                    Texture2D::from_file_with_format(
+                        include_bytes!(concat!("../../assets/themes/railroad/vehicles/", $file)),
+                        Some(ImageFormat::Png),
+                    ),
+                );
+            };
+        }
+
+        load_rail_veh!("train_locomotive_red_h", "train_locomotive_red_h.png");
+        load_rail_veh!("train_locomotive_red_v", "train_locomotive_red_v.png");
+
+        load_rail_veh!("train_coach_blue_h", "train_coach_blue_h.png");
+        load_rail_veh!("train_coach_blue_v", "train_coach_blue_v.png");
+
+        load_rail_veh!("train_tanker_yellow_h", "train_tanker_yellow_h.png");
+        load_rail_veh!("train_tanker_yellow_v", "train_tanker_yellow_v.png");
+
+        load_rail_veh!("train_shunter_green_h", "train_shunter_green_h.png");
+        load_rail_veh!("train_shunter_green_v", "train_shunter_green_v.png");
+
+        load_rail_veh!("train_patrol_railcar_h", "train_patrol_railcar_h.png");
+        load_rail_veh!("train_patrol_railcar_v", "train_patrol_railcar_v.png");
+
+        load_rail_veh!("train_cargo_flat_h", "train_cargo_flat_h.png");
+        load_rail_veh!("train_cargo_flat_v", "train_cargo_flat_v.png");
+
+        load_rail_veh!("train_luxury_pullman_h", "train_luxury_pullman_h.png");
+        load_rail_veh!("train_luxury_pullman_v", "train_luxury_pullman_v.png");
+
+        load_rail_veh!("train_rescue_crane_h", "train_rescue_crane_h.png");
+        load_rail_veh!("train_rescue_crane_v", "train_rescue_crane_v.png");
+
+        load_rail_veh!("train_coal_hopper_h", "train_coal_hopper_h.png");
+        load_rail_veh!("train_coal_hopper_v", "train_coal_hopper_v.png");
+
+        load_rail_veh!("train_passenger_long_h", "train_passenger_long_h.png");
+        load_rail_veh!("train_passenger_long_v", "train_passenger_long_v.png");
+
         Self { textures, font }
     }
 

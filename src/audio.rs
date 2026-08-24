@@ -18,13 +18,13 @@ mod wasm_backend {
 
     #[link(wasm_import_module = "env")]
     extern "C" {
-        fn play_sound_slide(is_marine: i32);
-        fn play_sound_bump(is_marine: i32);
-        fn play_sound_alarm(is_marine: i32);
-        fn play_sound_siren(is_marine: i32);
+        fn play_sound_slide(theme_code: i32);
+        fn play_sound_bump(theme_code: i32);
+        fn play_sound_alarm(theme_code: i32);
+        fn play_sound_siren(theme_code: i32);
         fn play_sound_win();
         fn play_sound_click();
-        fn play_sound_exit(is_marine: i32);
+        fn play_sound_exit(theme_code: i32);
     }
 
     pub struct SoundBackend;
@@ -35,16 +35,20 @@ mod wasm_backend {
         }
 
         pub fn play(&self, trigger: SoundTrigger, theme: Theme) {
-            let is_marine = if theme == Theme::Marine { 1 } else { 0 };
+            let theme_code = match theme {
+                Theme::City => 0,
+                Theme::Marine => 1,
+                Theme::Railroad => 2,
+            };
             unsafe {
                 match trigger {
-                    SoundTrigger::Slide => play_sound_slide(is_marine),
-                    SoundTrigger::Bump => play_sound_bump(is_marine),
-                    SoundTrigger::Alarm => play_sound_alarm(is_marine),
-                    SoundTrigger::Siren => play_sound_siren(is_marine),
+                    SoundTrigger::Slide => play_sound_slide(theme_code),
+                    SoundTrigger::Bump => play_sound_bump(theme_code),
+                    SoundTrigger::Alarm => play_sound_alarm(theme_code),
+                    SoundTrigger::Siren => play_sound_siren(theme_code),
                     SoundTrigger::Win => play_sound_win(),
                     SoundTrigger::ButtonClick => play_sound_click(),
-                    SoundTrigger::ExitDrive => play_sound_exit(is_marine),
+                    SoundTrigger::ExitDrive => play_sound_exit(theme_code),
                 }
             }
         }
@@ -71,6 +75,12 @@ mod native_backend {
         snd_marine_alarm: Option<Sound>,
         snd_marine_siren: Option<Sound>,
         snd_marine_exit: Option<Sound>,
+
+        snd_rail_slide: Option<Sound>,
+        snd_rail_bump: Option<Sound>,
+        snd_rail_alarm: Option<Sound>,
+        snd_rail_siren: Option<Sound>,
+        snd_rail_exit: Option<Sound>,
     }
 
     impl SoundBackend {
@@ -123,6 +133,32 @@ mod native_backend {
                 ))
                 .await
                 .ok(),
+
+                snd_rail_slide: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/rail_slide.wav"
+                ))
+                .await
+                .ok(),
+                snd_rail_bump: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/rail_bump.wav"
+                ))
+                .await
+                .ok(),
+                snd_rail_alarm: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/rail_alarm.wav"
+                ))
+                .await
+                .ok(),
+                snd_rail_siren: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/rail_siren.wav"
+                ))
+                .await
+                .ok(),
+                snd_rail_exit: load_sound_from_bytes(include_bytes!(
+                    "../assets/audio/rail_exit.wav"
+                ))
+                .await
+                .ok(),
             }
         }
 
@@ -130,14 +166,24 @@ mod native_backend {
             let sound = match (trigger, theme) {
                 (SoundTrigger::Slide, Theme::Marine) => &self.snd_marine_slide,
                 (SoundTrigger::Slide, Theme::City) => &self.snd_slide,
+                (SoundTrigger::Slide, Theme::Railroad) => &self.snd_rail_slide,
+
                 (SoundTrigger::Bump, Theme::Marine) => &self.snd_marine_bump,
                 (SoundTrigger::Bump, Theme::City) => &self.snd_bump,
+                (SoundTrigger::Bump, Theme::Railroad) => &self.snd_rail_bump,
+
                 (SoundTrigger::Alarm, Theme::Marine) => &self.snd_marine_alarm,
                 (SoundTrigger::Alarm, Theme::City) => &self.snd_alarm,
+                (SoundTrigger::Alarm, Theme::Railroad) => &self.snd_rail_alarm,
+
                 (SoundTrigger::Siren, Theme::Marine) => &self.snd_marine_siren,
                 (SoundTrigger::Siren, Theme::City) => &self.snd_siren,
+                (SoundTrigger::Siren, Theme::Railroad) => &self.snd_rail_siren,
+
                 (SoundTrigger::ExitDrive, Theme::Marine) => &self.snd_marine_exit,
                 (SoundTrigger::ExitDrive, Theme::City) => &self.snd_exit,
+                (SoundTrigger::ExitDrive, Theme::Railroad) => &self.snd_rail_exit,
+
                 (SoundTrigger::Win, _) => &self.snd_win,
                 (SoundTrigger::ButtonClick, _) => &self.snd_click,
             };

@@ -32,15 +32,16 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
         let fallback_color = match board.theme {
             Theme::Marine => Color::new(0.12, 0.38, 0.58, 1.0),
             Theme::City => Color::new(0.12, 0.22, 0.14, 1.0),
+            Theme::Railroad => Color::new(0.14, 0.20, 0.14, 1.0),
         };
         draw_rectangle(0.0, start_y, sw, area_h, fallback_color);
     }
 
-    // 2. Draw asphalt exit road or marine water exit channel connecting exit gate to edge of screen
+    // 2. Draw asphalt exit road, marine water exit channel, or railroad exit siding
     render_exit_road(board, layout, textures);
 }
 
-/// Renders the asphalt exit road or water exit channel extending seamlessly from the exit gate to the screen border.
+/// Renders the asphalt exit road, water exit channel, or railroad exit tracks extending seamlessly from the exit gate.
 fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore) {
     let ox = layout.origin_x;
     let oy = layout.origin_y;
@@ -90,11 +91,12 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
         let fallback_color = match board.theme {
             Theme::Marine => Color::new(0.15, 0.46, 0.70, 1.0),
             Theme::City => ROAD_ASPHALT,
+            Theme::Railroad => Color::new(0.10, 0.09, 0.09, 1.0),
         };
         draw_rectangle(rx, ry, rw, rh, fallback_color);
     }
 
-    // 2. Resolve theme-specific border curb/pier color and centerline dash styling
+    // 2. Resolve theme-specific border curb/pier/buffer beam color and centerline dash styling
     let (border_color, dash_color, dash_len, dash_gap) = match board.theme {
         Theme::Marine => (
             Color::new(0.42, 0.28, 0.18, 1.0),
@@ -103,33 +105,103 @@ fn render_exit_road(board: &Board, layout: &BoardLayout, textures: &TextureStore
             12.0,
         ),
         Theme::City => (ROAD_CURB, ROAD_MARKING, 12.0, 8.0),
+        Theme::Railroad => (
+            Color::new(0.28, 0.18, 0.12, 1.0),
+            Color::new(0.35, 0.38, 0.42, 0.8),
+            14.0,
+            10.0,
+        ),
     };
 
-    // 3. Draw border curbs/piers and dashed centerline
+    // 3. Draw border curbs/piers/buffer beams and tracks/dashed lines
     if is_horizontal {
         draw_rectangle(rx, ry - curb_thick, rw, curb_thick, border_color);
         draw_rectangle(rx, ry + rh, rw, curb_thick, border_color);
-        draw_dashed_line_h(
-            dash_start,
-            dash_end,
-            ry + rh / 2.0,
-            2.5,
-            dash_len,
-            dash_gap,
-            dash_color,
-        );
+
+        if board.theme == Theme::Railroad {
+            // Draw wooden sleepers across exit track (dark creosote timber)
+            let tie_w = (cs * 0.14).max(6.0);
+            let tie_gap = (cs * 0.28).max(12.0);
+            let mut tx = rx + 4.0;
+            while tx < rx + rw {
+                draw_rectangle(
+                    tx,
+                    ry + cs * 0.08,
+                    tie_w,
+                    cs * 0.84,
+                    Color::new(0.12, 0.08, 0.05, 0.85),
+                );
+                tx += tie_w + tie_gap;
+            }
+            // Draw dual steel rails (dark weathered steel)
+            let rail_thick = (cs * 0.08).max(3.0);
+            let rail_col = Color::new(0.22, 0.23, 0.26, 0.90);
+            let rail_shine = Color::new(0.38, 0.40, 0.45, 0.50);
+            draw_rectangle(rx, ry + cs * 0.20, rw, rail_thick, rail_col);
+            draw_rectangle(rx, ry + cs * 0.20 + 1.0, rw, rail_thick * 0.35, rail_shine);
+            draw_rectangle(rx, ry + cs * 0.80 - rail_thick, rw, rail_thick, rail_col);
+            draw_rectangle(
+                rx,
+                ry + cs * 0.80 - rail_thick + 1.0,
+                rw,
+                rail_thick * 0.35,
+                rail_shine,
+            );
+        } else {
+            draw_dashed_line_h(
+                dash_start,
+                dash_end,
+                ry + rh / 2.0,
+                2.5,
+                dash_len,
+                dash_gap,
+                dash_color,
+            );
+        }
     } else {
         draw_rectangle(rx - curb_thick, ry, curb_thick, rh, border_color);
         draw_rectangle(rx + rw, ry, curb_thick, rh, border_color);
-        draw_dashed_line_v(
-            rx + rw / 2.0,
-            dash_start,
-            dash_end,
-            2.5,
-            dash_len,
-            dash_gap,
-            dash_color,
-        );
+
+        if board.theme == Theme::Railroad {
+            // Draw wooden sleepers across vertical exit track (dark creosote timber)
+            let tie_h = (cs * 0.14).max(6.0);
+            let tie_gap = (cs * 0.28).max(12.0);
+            let mut ty = ry + 4.0;
+            while ty < ry + rh {
+                draw_rectangle(
+                    rx + cs * 0.08,
+                    ty,
+                    cs * 0.84,
+                    tie_h,
+                    Color::new(0.12, 0.08, 0.05, 0.85),
+                );
+                ty += tie_h + tie_gap;
+            }
+            // Draw dual steel rails (dark weathered steel)
+            let rail_thick = (cs * 0.08).max(3.0);
+            let rail_col = Color::new(0.22, 0.23, 0.26, 0.90);
+            let rail_shine = Color::new(0.38, 0.40, 0.45, 0.50);
+            draw_rectangle(rx + cs * 0.20, ry, rail_thick, rh, rail_col);
+            draw_rectangle(rx + cs * 0.20 + 1.0, ry, rail_thick * 0.35, rh, rail_shine);
+            draw_rectangle(rx + cs * 0.80 - rail_thick, ry, rail_thick, rh, rail_col);
+            draw_rectangle(
+                rx + cs * 0.80 - rail_thick + 1.0,
+                ry,
+                rail_thick * 0.35,
+                rh,
+                rail_shine,
+            );
+        } else {
+            draw_dashed_line_v(
+                rx + rw / 2.0,
+                dash_start,
+                dash_end,
+                2.5,
+                dash_len,
+                dash_gap,
+                dash_color,
+            );
+        }
     }
 }
 
