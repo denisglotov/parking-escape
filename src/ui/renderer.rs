@@ -571,7 +571,86 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
             draw_rectangle_lines(px + 1.0, py + 1.0, pw - 2.0, ph - 2.0, 2.0, select_col);
         }
 
-        // 4. Draw Over-Vehicle Effects (Rooftop Strobes, Navigation Lights, Contact Sparks)
+        // 4. Steady Caboose Rear Class Marker Lamps (Railroad Theme)
+        if board.theme == Theme::Railroad
+            && veh.kind == crate::game::vehicle::VehicleKind::CarPolice
+        {
+            let marker_halo = Color::new(1.0, 0.12, 0.15, 0.40);
+            let marker_core = Color::new(1.0, 0.25, 0.25, 0.95);
+            let marker_center = Color::new(1.0, 0.90, 0.90, 0.95);
+
+            match veh.orientation {
+                crate::game::vehicle::Orientation::Horizontal => {
+                    let rx = px + cs * 0.06;
+                    let t1_y = py + ph * 0.14;
+                    let t2_y = py + ph * 0.86;
+
+                    draw_circle(rx, t1_y, cs * 0.14, marker_halo);
+                    draw_circle(rx, t1_y, cs * 0.065, marker_core);
+                    draw_circle(rx, t1_y, cs * 0.025, marker_center);
+
+                    draw_circle(rx, t2_y, cs * 0.14, marker_halo);
+                    draw_circle(rx, t2_y, cs * 0.065, marker_core);
+                    draw_circle(rx, t2_y, cs * 0.025, marker_center);
+                }
+                crate::game::vehicle::Orientation::Vertical => {
+                    let ry = py + cs * 0.06;
+                    let t1_x = px + pw * 0.14;
+                    let t2_x = px + pw * 0.86;
+
+                    draw_circle(t1_x, ry, cs * 0.14, marker_halo);
+                    draw_circle(t1_x, ry, cs * 0.065, marker_core);
+                    draw_circle(t1_x, ry, cs * 0.025, marker_center);
+
+                    draw_circle(t2_x, ry, cs * 0.14, marker_halo);
+                    draw_circle(t2_x, ry, cs * 0.065, marker_core);
+                    draw_circle(t2_x, ry, cs * 0.025, marker_center);
+                }
+            }
+        }
+
+        // 5. Locomotive Moving / Dragging Piston Steam Chuffs (Slow, leisurely atmospheric billows)
+        if board.theme == Theme::Railroad
+            && (veh.kind == crate::game::vehicle::VehicleKind::PlayerRed)
+            && (is_being_dragged || veh.drag_offset.abs() > 0.01 || (veh.is_player && board.is_won))
+        {
+            let time = get_time() as f32;
+            let chuff_speed = if is_being_dragged { 0.85 } else { 0.55 };
+            let (stack_x, stack_y) = match veh.orientation {
+                crate::game::vehicle::Orientation::Horizontal => (px + pw * 0.88, py + ph * 0.5),
+                crate::game::vehicle::Orientation::Vertical => (px + pw * 0.5, py + ph * 0.88),
+            };
+
+            for i in 0..4 {
+                let phase = (time * chuff_speed + i as f32 * 0.25) % 1.0;
+                let chuff_r = cs * (0.12 + phase * 0.32);
+                let chuff_alpha = (1.0 - phase).powf(1.6) * 0.48;
+                let (dx, dy) = match veh.orientation {
+                    crate::game::vehicle::Orientation::Horizontal => (
+                        -phase * cs * 0.50,
+                        (phase * 2.0 + i as f32 * 1.5).sin() * cs * 0.05 - phase * cs * 0.08,
+                    ),
+                    crate::game::vehicle::Orientation::Vertical => (
+                        (phase * 2.0 + i as f32 * 1.5).sin() * cs * 0.05 - phase * cs * 0.08,
+                        -phase * cs * 0.50,
+                    ),
+                };
+                draw_circle(
+                    stack_x + dx,
+                    stack_y + dy,
+                    chuff_r,
+                    Color::new(0.95, 0.95, 0.98, chuff_alpha),
+                );
+                draw_circle(
+                    stack_x + dx * 0.85,
+                    stack_y + dy * 0.85,
+                    chuff_r * 0.65,
+                    Color::new(1.0, 1.0, 1.0, chuff_alpha * 0.75),
+                );
+            }
+        }
+
+        // 6. Draw Over-Vehicle Effects (Rooftop Strobes, Navigation Lights, Contact Sparks)
         if let Some(bump) = &veh.bump_state {
             render_vehicle_effects(board.theme, veh, bump, Rect::new(px, py, pw, ph), cs);
         }
@@ -586,7 +665,7 @@ fn render_ground_effects(
     bounds: Rect,
     cs: f32,
 ) {
-    if veh.kind.is_emergency() {
+    if veh.kind.is_emergency() && theme != Theme::Railroad {
         let phase = bump.emergency_strobe_phase();
         let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
         let center_x = bounds.x + bounds.w * 0.5;
@@ -606,13 +685,7 @@ fn render_ground_effects(
                     Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
                 }
             }
-            Theme::Railroad => {
-                if phase < 0.5 {
-                    Color::new(1.0, 0.12, 0.15, 0.22 * micro_pulse * bump.intensity)
-                } else {
-                    Color::new(0.12, 0.55, 1.0, 0.22 * micro_pulse * bump.intensity)
-                }
-            }
+            Theme::Railroad => Color::new(0.0, 0.0, 0.0, 0.0),
         };
         draw_circle(center_x, center_y, cs * 1.5, reflection_col);
     }
@@ -633,22 +706,13 @@ fn render_vehicle_effects(
     let orient = veh.orientation;
     let is_emergency = veh.kind.is_emergency();
 
-    // 2. Headlights / Locomotive Lantern for City & Railroad vehicles on bump / hazard
-    if bump.is_hazard_on() && (theme == Theme::City || theme == Theme::Railroad) {
-        let is_rail = theme == Theme::Railroad;
-        let head_halo_col = if is_rail {
-            Color::new(1.0, 0.90, 0.45, 0.65 * bump.intensity)
-        } else {
-            Color::new(1.0, 0.96, 0.65, 0.55 * bump.intensity)
-        };
+    // 1. City Vehicle Headlights / Hazard Lights on collision
+    if bump.is_hazard_on() && theme == Theme::City {
+        let head_halo_col = Color::new(1.0, 0.96, 0.65, 0.55 * bump.intensity);
         let head_core_col = Color::new(1.0, 1.0, 0.9, 0.95);
         let tail_halo_col = Color::new(1.0, 0.25, 0.1, 0.60 * bump.intensity);
         let tail_core_col = Color::new(1.0, 0.45, 0.2, 0.95);
-        let beam_col = if is_rail {
-            Color::new(1.0, 0.92, 0.50, 0.30 * bump.intensity)
-        } else {
-            Color::new(1.0, 0.95, 0.6, 0.22 * bump.intensity)
-        };
+        let beam_col = Color::new(1.0, 0.95, 0.6, 0.22 * bump.intensity);
 
         match orient {
             crate::game::vehicle::Orientation::Horizontal => {
@@ -718,8 +782,8 @@ fn render_vehicle_effects(
         }
     }
 
-    // 3. Emergency rooftop strobe beacons (Police / Patrol Railcar & SAR Ambulance)
-    if is_emergency {
+    // 2. City / Marine emergency rooftop strobe beacons
+    if is_emergency && theme != Theme::Railroad {
         let phase = bump.emergency_strobe_phase();
         let pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
 
@@ -811,7 +875,7 @@ fn render_vehicle_effects(
                     );
                     draw_circle(
                         rear_x,
-                        top_y,
+                        bot_y,
                         beacon_sz * 0.6,
                         if phase >= 0.5 {
                             red_strobe
@@ -864,8 +928,42 @@ fn render_vehicle_effects(
         }
     }
 
+    // 3. Steam Exhaust Cloud Pop on Steam Locomotive Impact / Brake (Ultra-slow, billowy dissipation)
+    if theme == Theme::Railroad && veh.kind == crate::game::vehicle::VehicleKind::PlayerRed {
+        const STEAM_DURATION: f32 = 3.0;
+        if bump.timer < STEAM_DURATION {
+            let t = bump.timer / STEAM_DURATION;
+            let steam_alpha = (1.0 - t).powf(2.0) * 0.55 * bump.intensity;
+            let (stack_x, stack_y) = match orient {
+                crate::game::vehicle::Orientation::Horizontal => (px + pw * 0.88, py + ph * 0.5),
+                crate::game::vehicle::Orientation::Vertical => (px + pw * 0.5, py + ph * 0.88),
+            };
+
+            let base_r = cs * 0.16 + t * cs * 0.48;
+            // 3 billowy steam puffs expanding outward slowly
+            draw_circle(
+                stack_x - t * cs * 0.08,
+                stack_y - t * cs * 0.12,
+                base_r * 0.85,
+                Color::new(0.96, 0.96, 0.98, steam_alpha * 0.7),
+            );
+            draw_circle(
+                stack_x + t * cs * 0.08,
+                stack_y - t * cs * 0.16,
+                base_r * 1.05,
+                Color::new(1.0, 1.0, 1.0, steam_alpha * 0.85),
+            );
+            draw_circle(
+                stack_x,
+                stack_y - t * cs * 0.20,
+                base_r * 1.25,
+                Color::new(0.90, 0.92, 0.95, steam_alpha * 0.55),
+            );
+        }
+    }
+
     // 4. Contact spark or Water splash starburst on obstacle collision
-    const SPARK_DURATION: f32 = 0.22;
+    const SPARK_DURATION: f32 = 0.25;
     if bump.timer < SPARK_DURATION {
         let st = bump.timer / SPARK_DURATION;
         let s_alpha = (1.0 - st) * bump.intensity;
@@ -892,14 +990,13 @@ fn render_vehicle_effects(
 
         match theme {
             Theme::Marine => {
-                // Water splash concentric ripple rings & foam spray
                 let splash_ring = Color::new(0.85, 0.95, 1.0, s_alpha * 0.8);
                 let splash_core = Color::new(0.4, 0.85, 1.0, s_alpha * 0.5);
                 draw_circle_lines(cx, cy, s_rad, 2.5, splash_ring);
                 draw_circle_lines(cx, cy, s_rad * 0.55, 1.8, splash_core);
                 draw_circle(cx, cy, s_rad * 0.25, splash_ring);
             }
-            Theme::City | Theme::Railroad => {
+            Theme::City => {
                 let spark_glow = Color::new(1.0, 0.92, 0.4, s_alpha * 0.6);
                 let spark_core = Color::new(1.0, 1.0, 0.9, s_alpha);
 
@@ -907,6 +1004,121 @@ fn render_vehicle_effects(
                 draw_circle_lines(cx, cy, s_rad, 2.5, spark_core);
                 draw_line(cx - s_rad * 1.3, cy, cx + s_rad * 1.3, cy, 2.0, spark_core);
                 draw_line(cx, cy - s_rad * 1.3, cx, cy + s_rad * 1.3, 2.0, spark_core);
+            }
+            Theme::Railroad => {
+                // 1. Coupler Compression Shockwave at Knuckle Coupler Interface
+                let shock_t = (bump.timer / 0.22).clamp(0.0, 1.0);
+                let shock_alpha = (1.0 - shock_t).powi(2) * bump.intensity;
+                let shock_rad = cs * (0.14 + shock_t * 0.42);
+
+                draw_circle_lines(
+                    cx,
+                    cy,
+                    shock_rad,
+                    2.5,
+                    Color::new(0.85, 0.95, 1.0, shock_alpha * 0.85),
+                );
+                draw_circle(
+                    cx,
+                    cy,
+                    shock_rad * 0.35,
+                    Color::new(1.0, 1.0, 1.0, shock_alpha * 0.7),
+                );
+
+                // Sharp Coupler Impact Bar
+                match orient {
+                    crate::game::vehicle::Orientation::Horizontal => {
+                        draw_line(
+                            cx,
+                            cy - cs * 0.28,
+                            cx,
+                            cy + cs * 0.28,
+                            3.5,
+                            Color::new(1.0, 1.0, 1.0, shock_alpha * 0.9),
+                        );
+                    }
+                    crate::game::vehicle::Orientation::Vertical => {
+                        draw_line(
+                            cx - cs * 0.28,
+                            cy,
+                            cx + cs * 0.28,
+                            cy,
+                            3.5,
+                            Color::new(1.0, 1.0, 1.0, shock_alpha * 0.9),
+                        );
+                    }
+                }
+
+                // 2. Heavy Steel Rail Friction Sparks shooting along dual track rails
+                let spark_glow = Color::new(1.0, 0.75, 0.2, s_alpha * 0.75);
+                let spark_hot = Color::new(1.0, 0.95, 0.6, s_alpha * 0.95);
+                let spark_white = Color::new(1.0, 1.0, 1.0, s_alpha);
+
+                // Central impact flash
+                draw_circle(cx, cy, s_rad * 0.65, spark_glow);
+                draw_circle(cx, cy, s_rad * 0.28, spark_white);
+
+                // Multiple iron friction spark streaks along rails
+                let spread = cs * 0.28;
+                match orient {
+                    crate::game::vehicle::Orientation::Horizontal => {
+                        let rail_top_y = cy - spread;
+                        let rail_bot_y = cy + spread;
+                        let len = s_rad * 1.4;
+
+                        draw_line(cx - len, rail_top_y, cx + len, rail_top_y, 2.5, spark_hot);
+                        draw_line(
+                            cx - len * 0.6,
+                            rail_top_y - 2.0,
+                            cx + len * 0.6,
+                            rail_top_y - 2.0,
+                            1.5,
+                            spark_white,
+                        );
+
+                        draw_line(cx - len, rail_bot_y, cx + len, rail_bot_y, 2.5, spark_hot);
+                        draw_line(
+                            cx - len * 0.6,
+                            rail_bot_y + 2.0,
+                            cx + len * 0.6,
+                            rail_bot_y + 2.0,
+                            1.5,
+                            spark_white,
+                        );
+                    }
+                    crate::game::vehicle::Orientation::Vertical => {
+                        let rail_left_x = cx - spread;
+                        let rail_right_x = cx + spread;
+                        let len = s_rad * 1.4;
+
+                        draw_line(rail_left_x, cy - len, rail_left_x, cy + len, 2.5, spark_hot);
+                        draw_line(
+                            rail_left_x - 2.0,
+                            cy - len * 0.6,
+                            rail_left_x - 2.0,
+                            cy + len * 0.6,
+                            1.5,
+                            spark_white,
+                        );
+
+                        draw_line(
+                            rail_right_x,
+                            cy - len,
+                            rail_right_x,
+                            cy + len,
+                            2.5,
+                            spark_hot,
+                        );
+                        draw_line(
+                            rail_right_x + 2.0,
+                            cy - len * 0.6,
+                            rail_right_x + 2.0,
+                            cy + len * 0.6,
+                            1.5,
+                            spark_white,
+                        );
+                    }
+                }
             }
         }
     }

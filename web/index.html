@@ -70,6 +70,11 @@
           "marine_alarm",
           "marine_siren",
           "marine_exit",
+          "rail_slide",
+          "rail_bump",
+          "rail_alarm",
+          "rail_siren",
+          "rail_exit",
         ];
         for (const file of files) {
           fetch(`assets/audio/${file}.wav`)
@@ -176,21 +181,27 @@
       script.onload = function () {
         miniquad_add_plugin({
           register_plugin: function (env_obj) {
-            env_obj.env.play_sound_slide = function (is_marine) {
+            function getThemePrefix(theme_code) {
+              if (theme_code === 1) return "marine_";
+              if (theme_code === 2) return "rail_";
+              return "";
+            }
+
+            env_obj.env.play_sound_slide = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(is_marine ? "marine_slide" : "slide");
+                window.parkingPlaySound(getThemePrefix(theme_code) + "slide");
             };
-            env_obj.env.play_sound_bump = function (is_marine) {
+            env_obj.env.play_sound_bump = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(is_marine ? "marine_bump" : "bump");
+                window.parkingPlaySound(getThemePrefix(theme_code) + "bump");
             };
-            env_obj.env.play_sound_alarm = function (is_marine) {
+            env_obj.env.play_sound_alarm = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(is_marine ? "marine_alarm" : "alarm");
+                window.parkingPlaySound(getThemePrefix(theme_code) + "alarm");
             };
-            env_obj.env.play_sound_siren = function (is_marine) {
+            env_obj.env.play_sound_siren = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(is_marine ? "marine_siren" : "siren");
+                window.parkingPlaySound(getThemePrefix(theme_code) + "siren");
             };
             env_obj.env.play_sound_win = function () {
               if (window.parkingPlaySound) window.parkingPlaySound("win");
@@ -198,11 +209,13 @@
             env_obj.env.play_sound_click = function () {
               if (window.parkingPlaySound) window.parkingPlaySound("click");
             };
-            env_obj.env.play_sound_exit = function (is_marine) {
-              if (window.parkingPlaySound)
+            env_obj.env.play_sound_exit = function (theme_code) {
+              if (window.parkingPlaySound) {
+                const prefix = getThemePrefix(theme_code);
                 window.parkingPlaySound(
-                  is_marine ? "marine_exit" : "exit_drive",
+                  prefix ? prefix + "exit" : "exit_drive",
                 );
+              }
             };
           },
           version: 1,
