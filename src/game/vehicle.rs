@@ -114,10 +114,48 @@ impl VehicleKind {
         }
     }
 
+    pub const fn railroad_sprite_name(&self, orientation: Orientation) -> &'static str {
+        match (self, orientation) {
+            (Self::PlayerRed, Orientation::Horizontal) => "train_locomotive_red_h",
+            (Self::PlayerRed, Orientation::Vertical) => "train_locomotive_red_v",
+
+            (Self::CarSedanBlue, Orientation::Horizontal) => "train_coach_blue_h",
+            (Self::CarSedanBlue, Orientation::Vertical) => "train_coach_blue_v",
+
+            (Self::CarTaxiYellow, Orientation::Horizontal) => "train_tanker_yellow_h",
+            (Self::CarTaxiYellow, Orientation::Vertical) => "train_tanker_yellow_v",
+
+            (Self::CarHatchbackGreen, Orientation::Horizontal) => "train_shunter_green_h",
+            (Self::CarHatchbackGreen, Orientation::Vertical) => "train_shunter_green_v",
+
+            (Self::CarPolice, Orientation::Horizontal) => "train_caboose_red_h",
+            (Self::CarPolice, Orientation::Vertical) => "train_caboose_red_v",
+
+            (Self::TruckDelivery, Orientation::Horizontal) => "train_cargo_flat_h",
+            (Self::TruckDelivery, Orientation::Vertical) => "train_cargo_flat_v",
+
+            (Self::LimoWhite, Orientation::Horizontal) => "train_luxury_pullman_h",
+            (Self::LimoWhite, Orientation::Vertical) => "train_luxury_pullman_v",
+
+            (Self::Ambulance, Orientation::Horizontal) => "train_heavy_crane_h",
+            (Self::Ambulance, Orientation::Vertical) => "train_heavy_crane_v",
+
+            (Self::SemiTruck, Orientation::Horizontal) => "train_coal_hopper_h",
+            (Self::SemiTruck, Orientation::Vertical) => "train_coal_hopper_v",
+
+            (Self::BusTransit, Orientation::Horizontal) => "train_passenger_long_h",
+            (Self::BusTransit, Orientation::Vertical) => "train_passenger_long_v",
+
+            (Self::Unknown, Orientation::Horizontal) => "train_locomotive_red_h",
+            (Self::Unknown, Orientation::Vertical) => "train_locomotive_red_v",
+        }
+    }
+
     pub const fn sprite_for_theme(&self, orientation: Orientation, theme: Theme) -> &'static str {
         match theme {
             Theme::City => self.city_sprite_name(orientation),
             Theme::Marine => self.marine_sprite_name(orientation),
+            Theme::Railroad => self.railroad_sprite_name(orientation),
         }
     }
 }
@@ -390,5 +428,33 @@ mod tests {
         assert_eq!(end_ox, 0.0);
         assert_eq!(end_oy, 0.0);
         assert_eq!(drift.roll(), 0.0);
+    }
+
+    #[test]
+    fn test_railroad_sprite_names() {
+        assert_eq!(
+            VehicleKind::PlayerRed.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_locomotive_red_h"
+        );
+        assert_eq!(
+            VehicleKind::PlayerRed.sprite_for_theme(Orientation::Vertical, Theme::Railroad),
+            "train_locomotive_red_v"
+        );
+        assert_eq!(
+            VehicleKind::CarSedanBlue.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_coach_blue_h"
+        );
+        assert_eq!(
+            VehicleKind::CarPolice.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_caboose_red_h"
+        );
+        assert_eq!(
+            VehicleKind::Ambulance.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_heavy_crane_h"
+        );
+        assert_eq!(
+            VehicleKind::SemiTruck.sprite_for_theme(Orientation::Horizontal, Theme::Railroad),
+            "train_coal_hopper_h"
+        );
     }
 }

@@ -18,6 +18,7 @@ impl ObstacleKind {
         match theme {
             Theme::Marine => Self::Buoy,
             Theme::City => Self::Rock,
+            Theme::Railroad => Self::Barrier,
         }
     }
 
@@ -41,10 +42,21 @@ impl ObstacleKind {
         }
     }
 
+    pub const fn railroad_sprite_name(&self) -> &'static str {
+        match self {
+            Self::Rock => "railroad_coal_pile",
+            Self::Barrier => "railroad_buffer_stop",
+            Self::Buoy => "railroad_buffer_stop",
+            Self::Pillar => "railroad_semaphore",
+            Self::Unknown => "railroad_buffer_stop",
+        }
+    }
+
     pub const fn sprite_for_theme(&self, theme: Theme) -> &'static str {
         match theme {
             Theme::City => self.city_sprite_name(),
             Theme::Marine => self.marine_sprite_name(),
+            Theme::Railroad => self.railroad_sprite_name(),
         }
     }
 }
@@ -239,5 +251,27 @@ mod tests {
         let unspecified_obs = Obstacle::new(0, 0, 1, 1, None);
         assert_eq!(unspecified_obs.sprite_name(Theme::Marine), "marine_buoy");
         assert_eq!(unspecified_obs.sprite_name(Theme::City), "city_rock");
+        assert_eq!(
+            unspecified_obs.sprite_name(Theme::Railroad),
+            "railroad_buffer_stop"
+        );
+
+        // Railroad sprite conversions
+        assert_eq!(
+            ObstacleKind::Pillar.railroad_sprite_name(),
+            "railroad_semaphore"
+        );
+        assert_eq!(
+            ObstacleKind::Barrier.railroad_sprite_name(),
+            "railroad_buffer_stop"
+        );
+        assert_eq!(
+            ObstacleKind::Rock.railroad_sprite_name(),
+            "railroad_coal_pile"
+        );
+        assert_eq!(
+            ObstacleKind::Pillar.sprite_for_theme(Theme::Railroad),
+            "railroad_semaphore"
+        );
     }
 }

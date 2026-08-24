@@ -1080,4 +1080,62 @@ mod tests {
             "Touching buoy should trigger its wobble animation"
         );
     }
+
+    #[test]
+    fn test_railroad_theme_physics_and_bounce() {
+        let loco = Vehicle::new(
+            VehicleKind::PlayerRed,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            true,
+        );
+
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+
+        let mut board = Board::new(6, 6, exit, vec![loco], vec![]);
+        board.theme = Theme::Railroad;
+
+        // Railroad bumper bump triggers recoil bounce
+        let snd = board.trigger_bump(0, 1.0, 7.0);
+        assert!(snd.is_some());
+        assert!(board.vehicles[0].bump_state.is_some());
+        let bump = board.vehicles[0].bump_state.as_ref().unwrap();
+        assert!(bump.enable_bounce);
+
+        // Coasting deceleration in railroad is smoother than city
+        let mut city_board = board.clone();
+        city_board.theme = Theme::City;
+
+        board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 6.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        city_board.active_coast = Some(InertiaCoastState {
+            vehicle_index: 0,
+            velocity: 6.0,
+            min_offset: 0.0,
+            max_offset: 4.0,
+        });
+
+        let _ = board.update(0.04);
+        let _ = city_board.update(0.04);
+
+        let rail_vel = board.active_coast.as_ref().unwrap().velocity;
+        let city_vel = city_board.active_coast.as_ref().unwrap().velocity;
+        assert!(
+            rail_vel > city_vel,
+            "Railroad coast velocity ({}) should be higher than city ({}) due to lower rolling resistance",
+            rail_vel,
+            city_vel
+        );
+    }
 }
