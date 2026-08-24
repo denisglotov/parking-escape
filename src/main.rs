@@ -28,6 +28,7 @@ fn window_conf() -> Conf {
         window_width: 540,
         window_height: 800,
         high_dpi: true,
+        sample_count: 0,
         ..Default::default()
     }
 }
