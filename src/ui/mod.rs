@@ -126,11 +126,21 @@ pub struct TextureStore {
 }
 
 impl TextureStore {
+    pub const BASE_FONT_SIZE: u16 = 64;
+
     pub async fn load_all() -> Self {
         let mut textures = HashMap::new();
 
         let font = load_ttf_font_from_bytes(include_bytes!("../../assets/fonts/game_font.ttf"))
             .expect("Failed to load TTF game font");
+
+        // Pre-cache ASCII character set at the base font size (and common DPI multipliers)
+        // so that the GPU texture atlas is allocated once upfront and never reallocated/deleted mid-frame.
+        let chars = Font::ascii_character_list();
+        font.populate_font_cache(&chars, Self::BASE_FONT_SIZE);
+        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 1.5).ceil() as u16);
+        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 2.0).ceil() as u16);
+        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 3.0).ceil() as u16);
 
         macro_rules! load_tex {
             ($key:expr, $path:expr) => {
@@ -371,14 +381,15 @@ impl TextureStore {
     }
 
     pub fn draw_text(&self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+        let scale = font_size / Self::BASE_FONT_SIZE as f32;
         draw_text_ex(
             text,
             x,
             y,
             TextParams {
                 font: Some(&self.font),
-                font_size: font_size.round() as u16,
-                font_scale: 1.0,
+                font_size: Self::BASE_FONT_SIZE,
+                font_scale: scale,
                 color,
                 ..Default::default()
             },
@@ -386,7 +397,8 @@ impl TextureStore {
     }
 
     pub fn measure_text(&self, text: &str, font_size: f32) -> TextDimensions {
-        measure_text(text, Some(&self.font), font_size.round() as u16, 1.0)
+        let scale = font_size / Self::BASE_FONT_SIZE as f32;
+        measure_text(text, Some(&self.font), Self::BASE_FONT_SIZE, scale)
     }
 
     pub fn draw_text_centered(&self, text: &str, cx: f32, cy: f32, font_size: f32, color: Color) {
