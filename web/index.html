@@ -15,10 +15,7 @@
 
     <!-- Open Graph / Facebook / Discord / Telegram / Slack -->
     <meta property="og:type" content="website" />
-    <meta
-      property="og:title"
-      content="Parking Escape - Dynamic Sliding Logic Puzzle"
-    />
+    <meta property="og:title" content="Parking Escape - Dynamic Sliding Logic Puzzle" />
     <meta
       property="og:description"
       content="Parking Escape - dynamic sliding-block logic puzzle game written in Rust & Macroquad, compiled to WebAssembly."
@@ -30,10 +27,7 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Parking Escape - Dynamic Sliding Logic Puzzle"
-    />
+    <meta name="twitter:title" content="Parking Escape - Dynamic Sliding Logic Puzzle" />
     <meta
       name="twitter:description"
       content="Parking Escape - dynamic sliding-block logic puzzle game written in Rust & Macroquad, compiled to WebAssembly."
@@ -93,29 +87,29 @@
 
       (function preloadBytes() {
         const files = [
-          "slide",
-          "bump",
-          "alarm",
-          "siren",
-          "win",
-          "click",
-          "exit_drive",
-          "marine_slide",
-          "marine_bump",
-          "marine_alarm",
-          "marine_siren",
-          "marine_exit",
-          "rail_slide",
-          "rail_bump",
-          "rail_alarm",
-          "rail_siren",
-          "rail_exit",
+          'slide',
+          'bump',
+          'alarm',
+          'siren',
+          'win',
+          'click',
+          'exit_drive',
+          'marine_slide',
+          'marine_bump',
+          'marine_alarm',
+          'marine_siren',
+          'marine_exit',
+          'rail_slide',
+          'rail_bump',
+          'rail_alarm',
+          'rail_siren',
+          'rail_exit',
         ];
         for (const file of files) {
           fetch(`assets/audio/${file}.wav`)
             .then((r) => r.arrayBuffer())
             .then((b) => (fetchedBuffers[file] = b))
-            .catch((e) => console.debug("Audio preload skipped for:", file));
+            .catch((e) => console.debug('Audio preload skipped for:', file));
         }
       })();
 
@@ -144,7 +138,7 @@
         let ctx = getParkingAudioCtx();
         if (!ctx) return;
 
-        if (ctx.state === "suspended") {
+        if (ctx.state === 'suspended') {
           ctx.resume();
         }
 
@@ -160,36 +154,31 @@
         }
       }
 
-      ["click", "mousedown", "pointerdown", "keydown", "touchstart"].forEach(
-        (evt) => {
-          window.addEventListener(
-            evt,
-            (e) => {
-              if (
-                e.type === "keydown" &&
-                (e.key === "Meta" ||
-                  e.key === "Control" ||
-                  e.key === "Alt" ||
-                  e.key === "Shift")
-              ) {
-                return;
-              }
-              unlockAudioContext();
-            },
-            { capture: true },
-          );
-        },
-      );
+      ['click', 'mousedown', 'pointerdown', 'keydown', 'touchstart'].forEach((evt) => {
+        window.addEventListener(
+          evt,
+          (e) => {
+            if (
+              e.type === 'keydown' &&
+              (e.key === 'Meta' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Shift')
+            ) {
+              return;
+            }
+            unlockAudioContext();
+          },
+          { capture: true }
+        );
+      });
 
       window.parkingPlaySound = function (type) {
         let ctx = getParkingAudioCtx();
         if (!ctx) return;
 
-        if (ctx.state === "suspended") {
+        if (ctx.state === 'suspended') {
           ctx
             .resume()
             .then(() => playBuffer(ctx, type))
-            .catch((e) => console.warn("Audio blocked", e));
+            .catch((e) => console.warn('Audio blocked', e));
         } else {
           playBuffer(ctx, type);
         }
@@ -206,57 +195,55 @@
           source.connect(ctx.destination);
           source.start(0);
         } catch (e) {
-          console.error("Audio playback failed", e);
+          console.error('Audio playback failed', e);
         }
       }
     </script>
     <script>
-      const script = document.createElement("script");
-      script.src = "mq_js_bundle.js?t=" + Date.now();
+      const script = document.createElement('script');
+      script.src = 'mq_js_bundle.js?t=' + Date.now();
       script.onload = function () {
         miniquad_add_plugin({
           register_plugin: function (env_obj) {
             function getThemePrefix(theme_code) {
-              if (theme_code === 1) return "marine_";
-              if (theme_code === 2) return "rail_";
-              return "";
+              if (theme_code === 1) return 'marine_';
+              if (theme_code === 2) return 'rail_';
+              return '';
             }
 
             env_obj.env.play_sound_slide = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(getThemePrefix(theme_code) + "slide");
+                window.parkingPlaySound(getThemePrefix(theme_code) + 'slide');
             };
             env_obj.env.play_sound_bump = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(getThemePrefix(theme_code) + "bump");
+                window.parkingPlaySound(getThemePrefix(theme_code) + 'bump');
             };
             env_obj.env.play_sound_alarm = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(getThemePrefix(theme_code) + "alarm");
+                window.parkingPlaySound(getThemePrefix(theme_code) + 'alarm');
             };
             env_obj.env.play_sound_siren = function (theme_code) {
               if (window.parkingPlaySound)
-                window.parkingPlaySound(getThemePrefix(theme_code) + "siren");
+                window.parkingPlaySound(getThemePrefix(theme_code) + 'siren');
             };
             env_obj.env.play_sound_win = function () {
-              if (window.parkingPlaySound) window.parkingPlaySound("win");
+              if (window.parkingPlaySound) window.parkingPlaySound('win');
             };
             env_obj.env.play_sound_click = function () {
-              if (window.parkingPlaySound) window.parkingPlaySound("click");
+              if (window.parkingPlaySound) window.parkingPlaySound('click');
             };
             env_obj.env.play_sound_exit = function (theme_code) {
               if (window.parkingPlaySound) {
                 const prefix = getThemePrefix(theme_code);
-                window.parkingPlaySound(
-                  prefix ? prefix + "exit" : "exit_drive",
-                );
+                window.parkingPlaySound(prefix ? prefix + 'exit' : 'exit_drive');
               }
             };
           },
           version: 1,
-          name: "parking_audio",
+          name: 'parking_audio',
         });
-        load("parking-escape.wasm?t=" + Date.now());
+        load('parking-escape.wasm?t=' + Date.now());
       };
 
       document.head.appendChild(script);
