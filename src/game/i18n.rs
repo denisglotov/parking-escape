@@ -550,10 +550,7 @@ mod tests {
             parse_cli_locale(["--lang", "ru-RU"]),
             Some("ru-RU".to_string())
         );
-        assert_eq!(
-            parse_cli_locale(["-l", "es-ES"]),
-            Some("es-ES".to_string())
-        );
+        assert_eq!(parse_cli_locale(["-l", "es-ES"]), Some("es-ES".to_string()));
         assert_eq!(
             parse_cli_locale(["--lang=de-DE"]),
             Some("de-DE".to_string())
