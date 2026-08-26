@@ -120,8 +120,10 @@ impl ShadowTextStyle {
     }
 }
 
+use std::cell::RefCell;
+
 pub struct TextureStore {
-    pub textures: HashMap<String, Texture2D>,
+    textures: RefCell<HashMap<&'static str, Texture2D>>,
     pub font: Font,
 }
 
@@ -129,256 +131,13 @@ impl TextureStore {
     pub const BASE_FONT_SIZE: u16 = 64;
 
     pub async fn load_all() -> Self {
-        let mut textures = HashMap::new();
-
         let font = load_ttf_font_from_bytes(include_bytes!("../../assets/fonts/game_font.ttf"))
             .expect("Failed to load TTF game font");
 
-        // Pre-cache character set across all supported locales at base and scaled sizes
-        // so that the GPU texture atlas is allocated once upfront and never reallocated/deleted mid-frame.
-        let chars = crate::game::i18n::collect_all_characters();
-
-        font.populate_font_cache(&chars, Self::BASE_FONT_SIZE);
-        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 1.5).ceil() as u16);
-        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 2.0).ceil() as u16);
-        font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 3.0).ceil() as u16);
-
-        macro_rules! load_tex {
-            ($key:expr, $path:expr) => {
-                textures.insert(
-                    $key.to_string(),
-                    Texture2D::from_file_with_format(include_bytes!($path), Some(ImageFormat::Png)),
-                );
-            };
+        Self {
+            textures: RefCell::new(HashMap::new()),
+            font,
         }
-
-        // City Environment textures
-        load_tex!(
-            "city_background",
-            "../../assets/themes/city/environment/background.png"
-        );
-        load_tex!(
-            "city_ground",
-            "../../assets/themes/city/environment/ground.png"
-        );
-        load_tex!(
-            "stall_marker",
-            "../../assets/themes/city/environment/stall_marker.png"
-        );
-        load_tex!(
-            "city_exit_gate",
-            "../../assets/themes/city/environment/exit_gate.png"
-        );
-
-        // Marine Environment textures
-        load_tex!(
-            "marine_background",
-            "../../assets/themes/marine/environment/background.png"
-        );
-        load_tex!(
-            "marine_ground",
-            "../../assets/themes/marine/environment/ground.png"
-        );
-        load_tex!(
-            "marine_exit_gate",
-            "../../assets/themes/marine/environment/exit_gate.png"
-        );
-
-        // Obstacle textures
-        load_tex!(
-            "marine_buoy",
-            "../../assets/themes/marine/obstacles/buoy.png"
-        );
-        load_tex!(
-            "marine_buoy_green",
-            "../../assets/themes/marine/obstacles/buoy_green.png"
-        );
-        load_tex!(
-            "marine_rock",
-            "../../assets/themes/marine/obstacles/rock.png"
-        );
-        load_tex!("city_rock", "../../assets/themes/city/obstacles/rock.png");
-        load_tex!(
-            "city_pillar",
-            "../../assets/themes/city/obstacles/pillar.png"
-        );
-        load_tex!(
-            "city_barrier",
-            "../../assets/themes/city/obstacles/barrier.png"
-        );
-
-        // UI icon assets
-        load_tex!("badge_parking", "../../assets/ui/badge_parking.png");
-        load_tex!("star_gold", "../../assets/ui/star_gold.png");
-        load_tex!("star_empty", "../../assets/ui/star_empty.png");
-        load_tex!("icon_undo", "../../assets/ui/icon_undo.png");
-        load_tex!("icon_reset", "../../assets/ui/icon_reset.png");
-        load_tex!("icon_back", "../../assets/ui/icon_back.png");
-        load_tex!("icon_sound_on", "../../assets/ui/icon_sound_on.png");
-        load_tex!("icon_sound_off", "../../assets/ui/icon_sound_off.png");
-
-        // City Vehicle textures (both H and V)
-        macro_rules! load_city_veh {
-            ($key:expr, $file:expr) => {
-                textures.insert(
-                    $key.to_string(),
-                    Texture2D::from_file_with_format(
-                        include_bytes!(concat!("../../assets/themes/city/vehicles/", $file)),
-                        Some(ImageFormat::Png),
-                    ),
-                );
-            };
-        }
-
-        load_city_veh!("player_red_h", "player_red_h.png");
-        load_city_veh!("player_red_v", "player_red_v.png");
-
-        load_city_veh!("car_sedan_blue_h", "car_sedan_blue_h.png");
-        load_city_veh!("car_sedan_blue_v", "car_sedan_blue_v.png");
-
-        load_city_veh!("car_taxi_yellow_h", "car_taxi_yellow_h.png");
-        load_city_veh!("car_taxi_yellow_v", "car_taxi_yellow_v.png");
-
-        load_city_veh!("car_hatchback_green_h", "car_hatchback_green_h.png");
-        load_city_veh!("car_hatchback_green_v", "car_hatchback_green_v.png");
-
-        load_city_veh!("car_police_h", "car_police_h.png");
-        load_city_veh!("car_police_v", "car_police_v.png");
-
-        load_city_veh!("truck_delivery_h", "truck_delivery_h.png");
-        load_city_veh!("truck_delivery_v", "truck_delivery_v.png");
-
-        load_city_veh!("limo_white_h", "limo_white_h.png");
-        load_city_veh!("limo_white_v", "limo_white_v.png");
-
-        load_city_veh!("ambulance_h", "ambulance_h.png");
-        load_city_veh!("ambulance_v", "ambulance_v.png");
-
-        load_city_veh!("semi_truck_h", "semi_truck_h.png");
-        load_city_veh!("semi_truck_v", "semi_truck_v.png");
-
-        load_city_veh!("bus_transit_h", "bus_transit_h.png");
-        load_city_veh!("bus_transit_v", "bus_transit_v.png");
-
-        // Marine Ship textures (both H and V)
-        macro_rules! load_marine_veh {
-            ($key:expr, $file:expr) => {
-                textures.insert(
-                    $key.to_string(),
-                    Texture2D::from_file_with_format(
-                        include_bytes!(concat!("../../assets/themes/marine/vehicles/", $file)),
-                        Some(ImageFormat::Png),
-                    ),
-                );
-            };
-        }
-
-        load_marine_veh!("ship_player_red_h", "ship_player_red_h.png");
-        load_marine_veh!("ship_player_red_v", "ship_player_red_v.png");
-
-        load_marine_veh!("ship_sail_blue_h", "ship_sail_blue_h.png");
-        load_marine_veh!("ship_sail_blue_v", "ship_sail_blue_v.png");
-
-        load_marine_veh!("ship_taxi_yellow_h", "ship_taxi_yellow_h.png");
-        load_marine_veh!("ship_taxi_yellow_v", "ship_taxi_yellow_v.png");
-
-        load_marine_veh!("ship_tug_green_h", "ship_tug_green_h.png");
-        load_marine_veh!("ship_tug_green_v", "ship_tug_green_v.png");
-
-        load_marine_veh!("ship_patrol_h", "ship_patrol_h.png");
-        load_marine_veh!("ship_patrol_v", "ship_patrol_v.png");
-
-        load_marine_veh!("ship_cargo_h", "ship_cargo_h.png");
-        load_marine_veh!("ship_cargo_v", "ship_cargo_v.png");
-
-        load_marine_veh!("ship_yacht_white_h", "ship_yacht_white_h.png");
-        load_marine_veh!("ship_yacht_white_v", "ship_yacht_white_v.png");
-
-        load_marine_veh!("ship_sar_rescue_h", "ship_sar_rescue_h.png");
-        load_marine_veh!("ship_sar_rescue_v", "ship_sar_rescue_v.png");
-
-        load_marine_veh!("ship_container_h", "ship_container_h.png");
-        load_marine_veh!("ship_container_v", "ship_container_v.png");
-
-        load_marine_veh!("ship_ferry_h", "ship_ferry_h.png");
-        load_marine_veh!("ship_ferry_v", "ship_ferry_v.png");
-
-        // Railroad Environment textures
-        load_tex!(
-            "railroad_background",
-            "../../assets/themes/railroad/environment/background.png"
-        );
-        load_tex!(
-            "railroad_ground",
-            "../../assets/themes/railroad/environment/ground.png"
-        );
-        load_tex!(
-            "railroad_exit_gate",
-            "../../assets/themes/railroad/environment/exit_gate.png"
-        );
-
-        // Railroad Obstacle textures
-        load_tex!(
-            "railroad_buffer_stop",
-            "../../assets/themes/railroad/obstacles/buffer_stop.png"
-        );
-        load_tex!(
-            "railroad_coal_pile",
-            "../../assets/themes/railroad/obstacles/coal_pile.png"
-        );
-        load_tex!(
-            "railroad_semaphore",
-            "../../assets/themes/railroad/obstacles/semaphore.png"
-        );
-        load_tex!(
-            "railroad_rock",
-            "../../assets/themes/railroad/obstacles/rock.png"
-        );
-
-        // Railroad Rolling Stock textures (both H and V)
-        macro_rules! load_rail_veh {
-            ($key:expr, $file:expr) => {
-                textures.insert(
-                    $key.to_string(),
-                    Texture2D::from_file_with_format(
-                        include_bytes!(concat!("../../assets/themes/railroad/vehicles/", $file)),
-                        Some(ImageFormat::Png),
-                    ),
-                );
-            };
-        }
-
-        load_rail_veh!("train_locomotive_red_h", "train_locomotive_red_h.png");
-        load_rail_veh!("train_locomotive_red_v", "train_locomotive_red_v.png");
-
-        load_rail_veh!("train_coach_blue_h", "train_coach_blue_h.png");
-        load_rail_veh!("train_coach_blue_v", "train_coach_blue_v.png");
-
-        load_rail_veh!("train_tanker_yellow_h", "train_tanker_yellow_h.png");
-        load_rail_veh!("train_tanker_yellow_v", "train_tanker_yellow_v.png");
-
-        load_rail_veh!("train_shunter_green_h", "train_shunter_green_h.png");
-        load_rail_veh!("train_shunter_green_v", "train_shunter_green_v.png");
-
-        load_rail_veh!("train_caboose_red_h", "train_caboose_red_h.png");
-        load_rail_veh!("train_caboose_red_v", "train_caboose_red_v.png");
-
-        load_rail_veh!("train_cargo_flat_h", "train_cargo_flat_h.png");
-        load_rail_veh!("train_cargo_flat_v", "train_cargo_flat_v.png");
-
-        load_rail_veh!("train_luxury_pullman_h", "train_luxury_pullman_h.png");
-        load_rail_veh!("train_luxury_pullman_v", "train_luxury_pullman_v.png");
-
-        load_rail_veh!("train_heavy_crane_h", "train_heavy_crane_h.png");
-        load_rail_veh!("train_heavy_crane_v", "train_heavy_crane_v.png");
-
-        load_rail_veh!("train_coal_hopper_h", "train_coal_hopper_h.png");
-        load_rail_veh!("train_coal_hopper_v", "train_coal_hopper_v.png");
-
-        load_rail_veh!("train_passenger_long_h", "train_passenger_long_h.png");
-        load_rail_veh!("train_passenger_long_v", "train_passenger_long_v.png");
-
-        Self { textures, font }
     }
 
     pub fn draw_text(&self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
@@ -427,8 +186,16 @@ impl TextureStore {
         self.draw_text(text, x, y, style.font_size, style.color);
     }
 
-    pub fn get(&self, name: &str) -> Option<&Texture2D> {
-        self.textures.get(name)
+    pub fn get(&self, name: &str) -> Option<Texture2D> {
+        let mut map = self.textures.borrow_mut();
+        if let Some(tex) = map.get(name) {
+            return Some(tex.clone());
+        }
+
+        let (key, bytes) = match_raw_texture(name)?;
+        let tex = Texture2D::from_file_with_format(bytes, Some(ImageFormat::Png));
+        map.insert(key, tex.clone());
+        Some(tex)
     }
 
     pub fn draw_icon_button(
@@ -473,7 +240,7 @@ impl TextureStore {
             };
 
             draw_texture_ex(
-                tex,
+                &tex,
                 rect.x + icon_pad_x,
                 rect.y + icon_pad_y,
                 tint,
@@ -500,7 +267,7 @@ impl TextureStore {
             };
             if let Some(tex) = self.get(tex_name) {
                 draw_texture_ex(
-                    tex,
+                    &tex,
                     sx,
                     cy - size / 2.0,
                     WHITE,
@@ -587,4 +354,399 @@ impl BoardLayout {
             screen_height: screen_h,
         }
     }
+}
+
+fn match_raw_texture(name: &str) -> Option<(&'static str, &'static [u8])> {
+    let (key, bytes) = match name {
+        // UI icon assets
+        "badge_parking" => (
+            "badge_parking",
+            include_bytes!("../../assets/ui/badge_parking.png").as_slice(),
+        ),
+        "star_gold" => (
+            "star_gold",
+            include_bytes!("../../assets/ui/star_gold.png").as_slice(),
+        ),
+        "star_empty" => (
+            "star_empty",
+            include_bytes!("../../assets/ui/star_empty.png").as_slice(),
+        ),
+        "icon_undo" => (
+            "icon_undo",
+            include_bytes!("../../assets/ui/icon_undo.png").as_slice(),
+        ),
+        "icon_reset" => (
+            "icon_reset",
+            include_bytes!("../../assets/ui/icon_reset.png").as_slice(),
+        ),
+        "icon_back" => (
+            "icon_back",
+            include_bytes!("../../assets/ui/icon_back.png").as_slice(),
+        ),
+        "icon_sound_on" => (
+            "icon_sound_on",
+            include_bytes!("../../assets/ui/icon_sound_on.png").as_slice(),
+        ),
+        "icon_sound_off" => (
+            "icon_sound_off",
+            include_bytes!("../../assets/ui/icon_sound_off.png").as_slice(),
+        ),
+
+        // City Environment & Obstacles
+        "city_background" => (
+            "city_background",
+            include_bytes!("../../assets/themes/city/environment/background.png").as_slice(),
+        ),
+        "city_ground" => (
+            "city_ground",
+            include_bytes!("../../assets/themes/city/environment/ground.png").as_slice(),
+        ),
+        "stall_marker" => (
+            "stall_marker",
+            include_bytes!("../../assets/themes/city/environment/stall_marker.png").as_slice(),
+        ),
+        "city_exit_gate" => (
+            "city_exit_gate",
+            include_bytes!("../../assets/themes/city/environment/exit_gate.png").as_slice(),
+        ),
+        "city_rock" => (
+            "city_rock",
+            include_bytes!("../../assets/themes/city/obstacles/rock.png").as_slice(),
+        ),
+        "city_pillar" => (
+            "city_pillar",
+            include_bytes!("../../assets/themes/city/obstacles/pillar.png").as_slice(),
+        ),
+        "city_barrier" => (
+            "city_barrier",
+            include_bytes!("../../assets/themes/city/obstacles/barrier.png").as_slice(),
+        ),
+
+        // City Vehicles
+        "player_red_h" => (
+            "player_red_h",
+            include_bytes!("../../assets/themes/city/vehicles/player_red_h.png").as_slice(),
+        ),
+        "player_red_v" => (
+            "player_red_v",
+            include_bytes!("../../assets/themes/city/vehicles/player_red_v.png").as_slice(),
+        ),
+        "car_sedan_blue_h" => (
+            "car_sedan_blue_h",
+            include_bytes!("../../assets/themes/city/vehicles/car_sedan_blue_h.png").as_slice(),
+        ),
+        "car_sedan_blue_v" => (
+            "car_sedan_blue_v",
+            include_bytes!("../../assets/themes/city/vehicles/car_sedan_blue_v.png").as_slice(),
+        ),
+        "car_taxi_yellow_h" => (
+            "car_taxi_yellow_h",
+            include_bytes!("../../assets/themes/city/vehicles/car_taxi_yellow_h.png").as_slice(),
+        ),
+        "car_taxi_yellow_v" => (
+            "car_taxi_yellow_v",
+            include_bytes!("../../assets/themes/city/vehicles/car_taxi_yellow_v.png").as_slice(),
+        ),
+        "car_hatchback_green_h" => (
+            "car_hatchback_green_h",
+            include_bytes!("../../assets/themes/city/vehicles/car_hatchback_green_h.png")
+                .as_slice(),
+        ),
+        "car_hatchback_green_v" => (
+            "car_hatchback_green_v",
+            include_bytes!("../../assets/themes/city/vehicles/car_hatchback_green_v.png")
+                .as_slice(),
+        ),
+        "car_police_h" => (
+            "car_police_h",
+            include_bytes!("../../assets/themes/city/vehicles/car_police_h.png").as_slice(),
+        ),
+        "car_police_v" => (
+            "car_police_v",
+            include_bytes!("../../assets/themes/city/vehicles/car_police_v.png").as_slice(),
+        ),
+        "truck_delivery_h" => (
+            "truck_delivery_h",
+            include_bytes!("../../assets/themes/city/vehicles/truck_delivery_h.png").as_slice(),
+        ),
+        "truck_delivery_v" => (
+            "truck_delivery_v",
+            include_bytes!("../../assets/themes/city/vehicles/truck_delivery_v.png").as_slice(),
+        ),
+        "limo_white_h" => (
+            "limo_white_h",
+            include_bytes!("../../assets/themes/city/vehicles/limo_white_h.png").as_slice(),
+        ),
+        "limo_white_v" => (
+            "limo_white_v",
+            include_bytes!("../../assets/themes/city/vehicles/limo_white_v.png").as_slice(),
+        ),
+        "ambulance_h" => (
+            "ambulance_h",
+            include_bytes!("../../assets/themes/city/vehicles/ambulance_h.png").as_slice(),
+        ),
+        "ambulance_v" => (
+            "ambulance_v",
+            include_bytes!("../../assets/themes/city/vehicles/ambulance_v.png").as_slice(),
+        ),
+        "semi_truck_h" => (
+            "semi_truck_h",
+            include_bytes!("../../assets/themes/city/vehicles/semi_truck_h.png").as_slice(),
+        ),
+        "semi_truck_v" => (
+            "semi_truck_v",
+            include_bytes!("../../assets/themes/city/vehicles/semi_truck_v.png").as_slice(),
+        ),
+        "bus_transit_h" => (
+            "bus_transit_h",
+            include_bytes!("../../assets/themes/city/vehicles/bus_transit_h.png").as_slice(),
+        ),
+        "bus_transit_v" => (
+            "bus_transit_v",
+            include_bytes!("../../assets/themes/city/vehicles/bus_transit_v.png").as_slice(),
+        ),
+
+        // Marine Environment & Obstacles
+        "marine_background" => (
+            "marine_background",
+            include_bytes!("../../assets/themes/marine/environment/background.png").as_slice(),
+        ),
+        "marine_ground" => (
+            "marine_ground",
+            include_bytes!("../../assets/themes/marine/environment/ground.png").as_slice(),
+        ),
+        "marine_exit_gate" => (
+            "marine_exit_gate",
+            include_bytes!("../../assets/themes/marine/environment/exit_gate.png").as_slice(),
+        ),
+        "marine_buoy" => (
+            "marine_buoy",
+            include_bytes!("../../assets/themes/marine/obstacles/buoy.png").as_slice(),
+        ),
+        "marine_buoy_green" => (
+            "marine_buoy_green",
+            include_bytes!("../../assets/themes/marine/obstacles/buoy_green.png").as_slice(),
+        ),
+        "marine_rock" => (
+            "marine_rock",
+            include_bytes!("../../assets/themes/marine/obstacles/rock.png").as_slice(),
+        ),
+
+        // Marine Ships
+        "ship_player_red_h" => (
+            "ship_player_red_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_player_red_h.png").as_slice(),
+        ),
+        "ship_player_red_v" => (
+            "ship_player_red_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_player_red_v.png").as_slice(),
+        ),
+        "ship_sail_blue_h" => (
+            "ship_sail_blue_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_sail_blue_h.png").as_slice(),
+        ),
+        "ship_sail_blue_v" => (
+            "ship_sail_blue_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_sail_blue_v.png").as_slice(),
+        ),
+        "ship_taxi_yellow_h" => (
+            "ship_taxi_yellow_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_taxi_yellow_h.png").as_slice(),
+        ),
+        "ship_taxi_yellow_v" => (
+            "ship_taxi_yellow_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_taxi_yellow_v.png").as_slice(),
+        ),
+        "ship_tug_green_h" => (
+            "ship_tug_green_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_tug_green_h.png").as_slice(),
+        ),
+        "ship_tug_green_v" => (
+            "ship_tug_green_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_tug_green_v.png").as_slice(),
+        ),
+        "ship_patrol_h" => (
+            "ship_patrol_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_patrol_h.png").as_slice(),
+        ),
+        "ship_patrol_v" => (
+            "ship_patrol_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_patrol_v.png").as_slice(),
+        ),
+        "ship_cargo_h" => (
+            "ship_cargo_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_cargo_h.png").as_slice(),
+        ),
+        "ship_cargo_v" => (
+            "ship_cargo_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_cargo_v.png").as_slice(),
+        ),
+        "ship_yacht_white_h" => (
+            "ship_yacht_white_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_yacht_white_h.png").as_slice(),
+        ),
+        "ship_yacht_white_v" => (
+            "ship_yacht_white_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_yacht_white_v.png").as_slice(),
+        ),
+        "ship_sar_rescue_h" => (
+            "ship_sar_rescue_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_sar_rescue_h.png").as_slice(),
+        ),
+        "ship_sar_rescue_v" => (
+            "ship_sar_rescue_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_sar_rescue_v.png").as_slice(),
+        ),
+        "ship_container_h" => (
+            "ship_container_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_container_h.png").as_slice(),
+        ),
+        "ship_container_v" => (
+            "ship_container_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_container_v.png").as_slice(),
+        ),
+        "ship_ferry_h" => (
+            "ship_ferry_h",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_ferry_h.png").as_slice(),
+        ),
+        "ship_ferry_v" => (
+            "ship_ferry_v",
+            include_bytes!("../../assets/themes/marine/vehicles/ship_ferry_v.png").as_slice(),
+        ),
+
+        // Railroad Environment & Obstacles
+        "railroad_background" => (
+            "railroad_background",
+            include_bytes!("../../assets/themes/railroad/environment/background.png").as_slice(),
+        ),
+        "railroad_ground" => (
+            "railroad_ground",
+            include_bytes!("../../assets/themes/railroad/environment/ground.png").as_slice(),
+        ),
+        "railroad_exit_gate" => (
+            "railroad_exit_gate",
+            include_bytes!("../../assets/themes/railroad/environment/exit_gate.png").as_slice(),
+        ),
+        "railroad_buffer_stop" => (
+            "railroad_buffer_stop",
+            include_bytes!("../../assets/themes/railroad/obstacles/buffer_stop.png").as_slice(),
+        ),
+        "railroad_coal_pile" => (
+            "railroad_coal_pile",
+            include_bytes!("../../assets/themes/railroad/obstacles/coal_pile.png").as_slice(),
+        ),
+        "railroad_semaphore" => (
+            "railroad_semaphore",
+            include_bytes!("../../assets/themes/railroad/obstacles/semaphore.png").as_slice(),
+        ),
+        "railroad_rock" => (
+            "railroad_rock",
+            include_bytes!("../../assets/themes/railroad/obstacles/rock.png").as_slice(),
+        ),
+
+        // Railroad Trains
+        "train_locomotive_red_h" => (
+            "train_locomotive_red_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_locomotive_red_h.png")
+                .as_slice(),
+        ),
+        "train_locomotive_red_v" => (
+            "train_locomotive_red_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_locomotive_red_v.png")
+                .as_slice(),
+        ),
+        "train_coach_blue_h" => (
+            "train_coach_blue_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_coach_blue_h.png")
+                .as_slice(),
+        ),
+        "train_coach_blue_v" => (
+            "train_coach_blue_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_coach_blue_v.png")
+                .as_slice(),
+        ),
+        "train_tanker_yellow_h" => (
+            "train_tanker_yellow_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_tanker_yellow_h.png")
+                .as_slice(),
+        ),
+        "train_tanker_yellow_v" => (
+            "train_tanker_yellow_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_tanker_yellow_v.png")
+                .as_slice(),
+        ),
+        "train_shunter_green_h" => (
+            "train_shunter_green_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_shunter_green_h.png")
+                .as_slice(),
+        ),
+        "train_shunter_green_v" => (
+            "train_shunter_green_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_shunter_green_v.png")
+                .as_slice(),
+        ),
+        "train_caboose_red_h" => (
+            "train_caboose_red_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_caboose_red_h.png")
+                .as_slice(),
+        ),
+        "train_caboose_red_v" => (
+            "train_caboose_red_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_caboose_red_v.png")
+                .as_slice(),
+        ),
+        "train_cargo_flat_h" => (
+            "train_cargo_flat_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_cargo_flat_h.png")
+                .as_slice(),
+        ),
+        "train_cargo_flat_v" => (
+            "train_cargo_flat_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_cargo_flat_v.png")
+                .as_slice(),
+        ),
+        "train_luxury_pullman_h" => (
+            "train_luxury_pullman_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_luxury_pullman_h.png")
+                .as_slice(),
+        ),
+        "train_luxury_pullman_v" => (
+            "train_luxury_pullman_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_luxury_pullman_v.png")
+                .as_slice(),
+        ),
+        "train_heavy_crane_h" => (
+            "train_heavy_crane_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_heavy_crane_h.png")
+                .as_slice(),
+        ),
+        "train_heavy_crane_v" => (
+            "train_heavy_crane_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_heavy_crane_v.png")
+                .as_slice(),
+        ),
+        "train_coal_hopper_h" => (
+            "train_coal_hopper_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_coal_hopper_h.png")
+                .as_slice(),
+        ),
+        "train_coal_hopper_v" => (
+            "train_coal_hopper_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_coal_hopper_v.png")
+                .as_slice(),
+        ),
+        "train_passenger_long_h" => (
+            "train_passenger_long_h",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_passenger_long_h.png")
+                .as_slice(),
+        ),
+        "train_passenger_long_v" => (
+            "train_passenger_long_v",
+            include_bytes!("../../assets/themes/railroad/vehicles/train_passenger_long_v.png")
+                .as_slice(),
+        ),
+
+        _ => return None,
+    };
+    Some((key, bytes))
 }

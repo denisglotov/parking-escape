@@ -401,7 +401,7 @@ pub fn render_level_select(
     let icon_sz = metrics.s(24.0);
     if let Some(back_tex) = textures.get("icon_back") {
         draw_texture_ex(
-            back_tex,
+            &back_tex,
             btn_pad_x + metrics.s(10.0),
             btn_y + (btn_h - icon_sz) / 2.0,
             if back_hovered {

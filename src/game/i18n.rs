@@ -127,15 +127,6 @@ pub fn get_locales_list() -> &'static [LocaleStrings] {
     LOCALES.get_or_init(load_all_locales).as_slice()
 }
 
-/// Collects all unique characters across ASCII and all supported locales for GPU font texture atlas pre-caching.
-pub fn collect_all_characters() -> Vec<char> {
-    let mut chars = macroquad::prelude::Font::ascii_character_list();
-    chars.extend(LOCALES_RAW_JSON.iter().flat_map(|raw| raw.chars()));
-    chars.sort_unstable();
-    chars.dedup();
-    chars
-}
-
 /// Normalizes locale tags with various separators ('-', '_', '+') to lowercased hyphenated format.
 /// e.g. "pt_BR", "pt+BR", "PT-BR" -> "pt-br"
 pub fn normalize_locale_tag(tag: &str) -> String {

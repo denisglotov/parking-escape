@@ -39,7 +39,7 @@ pub fn render_nature_background(board: &Board, layout: &BoardLayout, textures: &
         if sw > 0.0 && area_h > 0.0 && bg_tex.width() > 0.0 && bg_tex.height() > 0.0 {
             let src_rect = compute_aspect_cover_crop(bg_tex.width(), bg_tex.height(), sw, area_h);
             draw_texture_ex(
-                bg_tex,
+                &bg_tex,
                 0.0,
                 start_y,
                 WHITE,

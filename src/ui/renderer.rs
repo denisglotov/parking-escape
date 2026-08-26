@@ -33,7 +33,7 @@ pub fn render_board(
         Theme::Marine => {
             if let Some(water_tex) = textures.get(board.theme.ground_texture_key()) {
                 draw_texture_ex(
-                    water_tex,
+                    &water_tex,
                     ox,
                     oy,
                     WHITE,
@@ -71,7 +71,7 @@ pub fn render_board(
         Theme::Railroad => {
             if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
                 draw_texture_ex(
-                    ground_tex,
+                    &ground_tex,
                     ox,
                     oy,
                     WHITE,
@@ -135,7 +135,7 @@ pub fn render_board(
         Theme::City => {
             if let Some(ground_tex) = textures.get(board.theme.ground_texture_key()) {
                 draw_texture_ex(
-                    ground_tex,
+                    &ground_tex,
                     ox,
                     oy,
                     WHITE,
@@ -153,7 +153,7 @@ pub fn render_board(
                 for gx in 0..board.width {
                     for gy in 0..board.height {
                         draw_texture_ex(
-                            marker_tex,
+                            &marker_tex,
                             ox + gx as f32 * cs,
                             oy + gy as f32 * cs,
                             Color::new(1.0, 1.0, 1.0, 0.35),
@@ -345,7 +345,7 @@ fn render_obstacles(
         // 3. Draw Sprite Texture with fallback
         if let Some(tex) = textures.get(sprite_key) {
             draw_texture_ex(
-                tex,
+                &tex,
                 px,
                 py,
                 WHITE,
@@ -437,7 +437,7 @@ fn render_exit_gate(board: &Board, layout: &BoardLayout, textures: &TextureStore
     let gate_key = board.theme.exit_gate_texture_key();
     if let Some(gate_tex) = textures.get(gate_key) {
         draw_texture_ex(
-            gate_tex,
+            &gate_tex,
             gx,
             gy,
             Color::new(1.0, 1.0, 1.0, glow_pulse),
@@ -536,7 +536,7 @@ fn render_vehicles(board: &Board, layout: &BoardLayout, textures: &TextureStore)
         let sprite_name = veh.kind.sprite_for_theme(veh.orientation, board.theme);
         if let Some(tex) = textures.get(sprite_name) {
             draw_texture_ex(
-                tex,
+                &tex,
                 px,
                 py,
                 WHITE,

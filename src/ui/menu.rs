@@ -29,7 +29,7 @@ pub fn render_main_menu(
     let badge_y = (screen_h * 0.14).max(metrics.s(32.0));
     if let Some(badge_tex) = textures.get("badge_parking") {
         draw_texture_ex(
-            badge_tex,
+            &badge_tex,
             screen_w / 2.0 - badge_sz / 2.0,
             badge_y,
             WHITE,
@@ -132,7 +132,7 @@ pub fn render_main_menu(
     if let Some(snd_tex) = textures.get(sound_tex_key) {
         let icon_sz = metrics.s(32.0);
         draw_texture_ex(
-            snd_tex,
+            &snd_tex,
             btn_x + metrics.s(20.0),
             btn_y + (btn_h - icon_sz) / 2.0,
             WHITE,
