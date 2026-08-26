@@ -67,36 +67,16 @@ pub fn render_hud(
         THEME.text_primary,
     );
 
-    // Moves vs Par moves & Star rating
-    let stars = level.calculate_stars(moves);
+    // Moves vs Par moves
     let stats_str = locales.hud.format_stats(moves, level.par_moves);
     let stats_font_size = metrics.s(19.0);
-    let stats_dim = textures.measure_text(&stats_str, stats_font_size);
-
-    let star_size = metrics.s(20.0);
-    let star_spacing = metrics.s(4.0);
-    let star_group_w = 3.0 * star_size + 2.0 * star_spacing;
-    let gap = metrics.s(12.0);
-    let total_stat_w = stats_dim.width + gap + star_group_w;
-    let stat_start_x = screen_w / 2.0 - total_stat_w / 2.0;
-
     let stats_y = btn_y + metrics.s(44.0);
-    textures.draw_text(
+    textures.draw_text_centered(
         &stats_str,
-        stat_start_x,
-        stats_y - stats_dim.height / 2.0 + stats_dim.offset_y,
+        screen_w / 2.0,
+        stats_y,
         stats_font_size,
         THEME.text_secondary,
-    );
-
-    // Draw glossy star row grouped with stats text
-    textures.draw_star_row(
-        stat_start_x + stats_dim.width + gap + star_group_w / 2.0,
-        stats_y,
-        stars,
-        3,
-        star_size,
-        star_spacing,
     );
 
     // Right Buttons: Sound, Reset, Undo
