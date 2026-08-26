@@ -1,0 +1,39 @@
+{
+  "locale": "ru-RU",
+  "language_name": "Русский",
+  "menu": {
+    "title": "ПОБЕГ С ПАРКОВКИ",
+    "subtitle": "Динамическая логическая головоломка",
+    "play_game": "ИГРАТЬ",
+    "level_select": "ВЫБОР УРОВНЯ",
+    "sound_on": "ЗВУК: ВКЛ",
+    "sound_off": "ЗВУК: ВЫКЛ"
+  },
+  "level_select": {
+    "title": "ВЫБОР УРОВНЯ",
+    "back": "Назад",
+    "size_small": "Малое 6x6",
+    "size_medium": "Среднее 8x8",
+    "size_big": "Большое 10x10",
+    "diff_relaxed": "Простой",
+    "diff_challenging": "Сложный",
+    "diff_hard": "Хардкор",
+    "generating_levels": "Генерация уровней..."
+  },
+  "hud": {
+    "level_template": "Уровень {id}",
+    "moves": "Ходы",
+    "par": "Норма",
+    "stats_template": "Ходы: {moves}  /  Норма: {par}"
+  },
+  "win_modal": {
+    "title": "УРОВЕНЬ ПРОЙДЕН!",
+    "completed_template": "Пройдено за {moves} ходов! (Норма: {par})",
+    "eval_perfect": "Идеальная тактика!",
+    "eval_great": "Отличное вождение!",
+    "eval_good": "Хорошая работа!",
+    "next_level": "СЛЕДУЮЩИЙ",
+    "replay": "ПОВТОРИТЬ",
+    "menu": "МЕНЮ"
+  }
+}

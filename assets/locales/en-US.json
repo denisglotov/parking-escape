@@ -1,0 +1,39 @@
+{
+  "locale": "en-US",
+  "language_name": "English",
+  "menu": {
+    "title": "PARKING ESCAPE",
+    "subtitle": "Dynamic Sliding Logic Puzzle",
+    "play_game": "PLAY GAME",
+    "level_select": "LEVEL SELECT",
+    "sound_on": "SOUND: ON",
+    "sound_off": "SOUND: OFF"
+  },
+  "level_select": {
+    "title": "SELECT LEVEL",
+    "back": "Back",
+    "size_small": "Small 6x6",
+    "size_medium": "Medium 8x8",
+    "size_big": "Big 10x10",
+    "diff_relaxed": "Relaxed",
+    "diff_challenging": "Challenging",
+    "diff_hard": "Hard",
+    "generating_levels": "Generating levels for this difficulty..."
+  },
+  "hud": {
+    "level_template": "Level {id}",
+    "moves": "Moves",
+    "par": "Par",
+    "stats_template": "Moves: {moves}  /  Par: {par}"
+  },
+  "win_modal": {
+    "title": "LEVEL CLEARED!",
+    "completed_template": "Completed in {moves} moves! (Par: {par})",
+    "eval_perfect": "Perfect Strategy!",
+    "eval_great": "Great Driving!",
+    "eval_good": "Good Job!",
+    "next_level": "NEXT LEVEL",
+    "replay": "REPLAY",
+    "menu": "MENU"
+  }
+}

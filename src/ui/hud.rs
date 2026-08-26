@@ -1,4 +1,5 @@
 use super::{TextureStore, UiMetrics, THEME};
+use crate::game::i18n::LocaleStrings;
 use crate::game::level::LevelData;
 use macroquad::prelude::*;
 
@@ -16,6 +17,7 @@ pub fn render_hud(
     moves: u32,
     can_undo: bool,
     sound_enabled: bool,
+    locales: &LocaleStrings,
     textures: &TextureStore,
     screen_w: f32,
 ) -> HudAction {
@@ -54,7 +56,7 @@ pub fn render_hud(
     }
 
     // Level Title in center (Prominent & Clear)
-    let title_text = format!("Level {}", level.id);
+    let title_text = locales.hud.format_level(level.id);
     let title_font_size = metrics.s(30.0);
     let title_y = btn_y + metrics.s(20.0);
     textures.draw_text_centered(
@@ -67,7 +69,7 @@ pub fn render_hud(
 
     // Moves vs Par moves & Star rating
     let stars = level.calculate_stars(moves);
-    let stats_str = format!("Moves: {}  /  Par: {}", moves, level.par_moves);
+    let stats_str = locales.hud.format_stats(moves, level.par_moves);
     let stats_font_size = metrics.s(19.0);
     let stats_dim = textures.measure_text(&stats_str, stats_font_size);
 

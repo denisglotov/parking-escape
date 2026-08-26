@@ -1,0 +1,39 @@
+{
+  "locale": "fr-FR",
+  "language_name": "Français",
+  "menu": {
+    "title": "PARKING ESCAPE",
+    "subtitle": "Casse-tête logique à glissements",
+    "play_game": "JOUER",
+    "level_select": "CHOISIR NIVEAU",
+    "sound_on": "SON : ACTIVÉ",
+    "sound_off": "SON : COUPÉ"
+  },
+  "level_select": {
+    "title": "CHOIX DU NIVEAU",
+    "back": "Retour",
+    "size_small": "Petit 6x6",
+    "size_medium": "Moyen 8x8",
+    "size_big": "Grand 10x10",
+    "diff_relaxed": "Détente",
+    "diff_challenging": "Stimulant",
+    "diff_hard": "Difficile",
+    "generating_levels": "Génération des niveaux pour cette difficulté..."
+  },
+  "hud": {
+    "level_template": "Niveau {id}",
+    "moves": "Coups",
+    "par": "Par",
+    "stats_template": "Coups : {moves}  /  Par : {par}"
+  },
+  "win_modal": {
+    "title": "NIVEAU RÉUSSI !",
+    "completed_template": "Terminé en {moves} coups ! (Par : {par})",
+    "eval_perfect": "Stratégie parfaite !",
+    "eval_great": "Superbe pilotage !",
+    "eval_good": "Bien joué !",
+    "next_level": "SUIVANT",
+    "replay": "REJOUER",
+    "menu": "MENU"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "locale": "es-ES",
+  "language_name": "Español",
+  "menu": {
+    "title": "PARKING ESCAPE",
+    "subtitle": "Puzle dinámico de lógica deslizante",
+    "play_game": "JUGAR",
+    "level_select": "SELECCIONAR NIVEL",
+    "sound_on": "SONIDO: SÍ",
+    "sound_off": "SONIDO: NO"
+  },
+  "level_select": {
+    "title": "SELECCIONAR NIVEL",
+    "back": "Volver",
+    "size_small": "Pequeño 6x6",
+    "size_medium": "Medio 8x8",
+    "size_big": "Grande 10x10",
+    "diff_relaxed": "Relajado",
+    "diff_challenging": "Desafiante",
+    "diff_hard": "Difícil",
+    "generating_levels": "Generando niveles para esta dificultad..."
+  },
+  "hud": {
+    "level_template": "Nivel {id}",
+    "moves": "Movimientos",
+    "par": "Par",
+    "stats_template": "Movimientos: {moves}  /  Par: {par}"
+  },
+  "win_modal": {
+    "title": "¡NIVEL COMPLETADO!",
+    "completed_template": "¡Completado en {moves} movimientos! (Par: {par})",
+    "eval_perfect": "¡Estrategia perfecta!",
+    "eval_great": "¡Gran conducción!",
+    "eval_good": "¡Buen trabajo!",
+    "next_level": "SIGUIENTE",
+    "replay": "REPETIR",
+    "menu": "MENÚ"
+  }
+}

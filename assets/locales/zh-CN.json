@@ -1,0 +1,39 @@
+{
+  "locale": "zh-CN",
+  "language_name": "简体中文",
+  "menu": {
+    "title": "停车场大逃脱",
+    "subtitle": "动态华容道逻辑解谜",
+    "play_game": "开始游戏",
+    "level_select": "关卡选择",
+    "sound_on": "声音: 开启",
+    "sound_off": "声音: 关闭"
+  },
+  "level_select": {
+    "title": "选择关卡",
+    "back": "返回",
+    "size_small": "小型 6x6",
+    "size_medium": "中型 8x8",
+    "size_big": "大型 10x10",
+    "diff_relaxed": "休闲",
+    "diff_challenging": "进阶",
+    "diff_hard": "困难",
+    "generating_levels": "正在生成该难度的关卡..."
+  },
+  "hud": {
+    "level_template": "关卡 {id}",
+    "moves": "步数",
+    "par": "标准",
+    "stats_template": "步数: {moves}  /  标准: {par}"
+  },
+  "win_modal": {
+    "title": "关卡完成！",
+    "completed_template": "用时 {moves} 步通关！(标准: {par})",
+    "eval_perfect": "完美的策略！",
+    "eval_great": "出色的车技！",
+    "eval_good": "干得漂亮！",
+    "next_level": "下一关",
+    "replay": "重玩",
+    "menu": "主菜单"
+  }
+}

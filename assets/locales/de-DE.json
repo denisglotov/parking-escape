@@ -1,0 +1,39 @@
+{
+  "locale": "de-DE",
+  "language_name": "Deutsch",
+  "menu": {
+    "title": "PARKING ESCAPE",
+    "subtitle": "Dynamisches Schiebepuzzle-Logikspiel",
+    "play_game": "SPIELEN",
+    "level_select": "LEVELAUSWAHL",
+    "sound_on": "TON: AN",
+    "sound_off": "TON: AUS"
+  },
+  "level_select": {
+    "title": "LEVEL WÄHLEN",
+    "back": "Zurück",
+    "size_small": "Klein 6x6",
+    "size_medium": "Mittel 8x8",
+    "size_big": "Groß 10x10",
+    "diff_relaxed": "Entspannt",
+    "diff_challenging": "Fordernd",
+    "diff_hard": "Schwer",
+    "generating_levels": "Generiere Level für diese Schwierigkeit..."
+  },
+  "hud": {
+    "level_template": "Level {id}",
+    "moves": "Züge",
+    "par": "Par",
+    "stats_template": "Züge: {moves}  /  Par: {par}"
+  },
+  "win_modal": {
+    "title": "LEVEL GESCHAFFT!",
+    "completed_template": "In {moves} Zügen geschafft! (Par: {par})",
+    "eval_perfect": "Perfekte Strategie!",
+    "eval_great": "Klasse gefahren!",
+    "eval_good": "Gut gemacht!",
+    "next_level": "NÄCHSTES LEVEL",
+    "replay": "WIEDERHOLEN",
+    "menu": "MENÜ"
+  }
+}

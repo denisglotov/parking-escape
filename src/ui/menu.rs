@@ -1,4 +1,5 @@
 use super::{draw_ui_button, ButtonStyle, ShadowTextStyle, TextureStore, UiMetrics, THEME};
+use crate::game::i18n::LocaleStrings;
 use macroquad::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -11,6 +12,7 @@ pub enum MenuAction {
 
 pub fn render_main_menu(
     sound_enabled: bool,
+    locales: &LocaleStrings,
     textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
@@ -39,7 +41,7 @@ pub fn render_main_menu(
     }
 
     // 2. Title Typography (Large, Punchy with Shadow)
-    let title = "PARKING ESCAPE";
+    let title = &locales.menu.title;
     let title_font_size = metrics.s(48.0);
     let title_y = badge_y + badge_sz + metrics.s(44.0);
     textures.draw_text_with_shadow(
@@ -54,7 +56,7 @@ pub fn render_main_menu(
         ),
     );
 
-    let subtitle = "Dynamic Sliding Logic Puzzle";
+    let subtitle = &locales.menu.subtitle;
     let sub_font_size = metrics.s(22.0);
     let sub_y = title_y + metrics.s(34.0);
     textures.draw_text_centered(
@@ -84,7 +86,7 @@ pub fn render_main_menu(
     if draw_ui_button(
         textures,
         Rect::new(btn_x, btn_y, btn_w, btn_h),
-        "PLAY GAME",
+        &locales.menu.play_game,
         btn_style(THEME.accent_green),
         mouse_pos,
         is_mouse_down,
@@ -96,7 +98,7 @@ pub fn render_main_menu(
     if draw_ui_button(
         textures,
         Rect::new(btn_x, btn_y, btn_w, btn_h),
-        "LEVEL SELECT",
+        &locales.menu.level_select,
         btn_style(THEME.card_bg),
         mouse_pos,
         is_mouse_down,
@@ -106,9 +108,9 @@ pub fn render_main_menu(
     btn_y += btn_h + spacing;
 
     let sound_label = if sound_enabled {
-        "SOUND: ON"
+        &locales.menu.sound_on
     } else {
-        "SOUND: OFF"
+        &locales.menu.sound_off
     };
     if draw_ui_button(
         textures,

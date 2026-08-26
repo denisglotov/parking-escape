@@ -1,4 +1,5 @@
 use super::{draw_ui_button, ButtonStyle, TextureStore, UiMetrics, THEME};
+use crate::game::i18n::LocaleStrings;
 use crate::game::level::{DifficultyTier, FieldSize, LevelRecord, LevelRepository, PackKey};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -29,12 +30,17 @@ impl LevelSelectState {
     }
 }
 
+pub struct LevelSelectParams<'a> {
+    pub repo: &'a LevelRepository,
+    pub records: &'a HashMap<(PackKey, usize), LevelRecord>,
+    pub active_pack: &'a mut PackKey,
+    pub state: &'a mut LevelSelectState,
+    pub locales: &'a LocaleStrings,
+    pub textures: &'a TextureStore,
+}
+
 pub fn render_level_select(
-    repo: &LevelRepository,
-    records: &HashMap<(PackKey, usize), LevelRecord>,
-    active_pack: &mut PackKey,
-    state: &mut LevelSelectState,
-    textures: &TextureStore,
+    params: &mut LevelSelectParams,
     screen_w: f32,
     screen_h: f32,
 ) -> LevelSelectAction {
@@ -45,6 +51,13 @@ pub fn render_level_select(
     let is_mouse_released = is_mouse_button_released(MouseButton::Left);
     let metrics = UiMetrics::new(screen_w, screen_h);
     let dt = get_frame_time();
+
+    let repo = params.repo;
+    let records = params.records;
+    let active_pack = &mut *params.active_pack;
+    let state = &mut *params.state;
+    let locales = params.locales;
+    let textures = params.textures;
 
     // Layout metrics calculation
     let header_h = metrics.hud_height;
@@ -152,7 +165,7 @@ pub fn render_level_select(
     // ==========================================
     if levels.is_empty() {
         textures.draw_text_centered(
-            "Generating levels for this difficulty...",
+            &locales.level_select.generating_levels,
             screen_w / 2.0,
             grid_top + viewport_h / 2.0,
             metrics.s(20.0),
@@ -284,7 +297,7 @@ pub fn render_level_select(
     );
 
     // Row 1: Field Size Tabs (Small 6x6, Medium 8x8, Big 10x10)
-    let size_tabs = FieldSize::ALL.map(|s| (s, s.label()));
+    let size_tabs = FieldSize::ALL.map(|s| (s, locales.level_select.size_label(s)));
     for (i, (size, label)) in size_tabs.iter().enumerate() {
         let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
         let is_selected = active_pack.size == *size;
@@ -315,7 +328,7 @@ pub fn render_level_select(
     }
 
     // Row 2: Difficulty Tier Tabs (Relaxed, Challenging, Hard)
-    let diff_tabs = DifficultyTier::ALL.map(|d| (d, d.label()));
+    let diff_tabs = DifficultyTier::ALL.map(|d| (d, locales.level_select.difficulty_label(d)));
     for (i, (diff, label)) in diff_tabs.iter().enumerate() {
         let tx = tab_start_x + i as f32 * (tab_w + tab_gap);
         let is_selected = active_pack.difficulty == *diff;
@@ -409,7 +422,7 @@ pub fn render_level_select(
         THEME.text_primary
     };
     textures.draw_text(
-        "Back",
+        &locales.level_select.back,
         btn_pad_x + icon_sz + metrics.s(14.0),
         btn_y + btn_h / 2.0 + metrics.s(6.0),
         back_text_size,
@@ -420,7 +433,7 @@ pub fn render_level_select(
         action = LevelSelectAction::BackToMenu;
     }
 
-    let header_title = "SELECT LEVEL";
+    let header_title = &locales.level_select.title;
     let title_font_size = metrics.s(28.0);
     textures.draw_text_centered(
         header_title,

@@ -1,0 +1,39 @@
+{
+  "locale": "ja-JP",
+  "language_name": "日本語",
+  "menu": {
+    "title": "パーキングエスケープ",
+    "subtitle": "爽快スライディング論理パズル",
+    "play_game": "プレイ",
+    "level_select": "レベル選択",
+    "sound_on": "サウンド: ON",
+    "sound_off": "サウンド: OFF"
+  },
+  "level_select": {
+    "title": "レベル選択",
+    "back": "戻る",
+    "size_small": "小 6x6",
+    "size_medium": "中 8x8",
+    "size_big": "大 10x10",
+    "diff_relaxed": "イージー",
+    "diff_challenging": "ノーマル",
+    "diff_hard": "ハード",
+    "generating_levels": "レベルを読み込み中..."
+  },
+  "hud": {
+    "level_template": "レベル {id}",
+    "moves": "手数",
+    "par": "目標",
+    "stats_template": "手数: {moves}  /  目標: {par}"
+  },
+  "win_modal": {
+    "title": "レベルクリア！",
+    "completed_template": "{moves}手でクリア！(目標: {par})",
+    "eval_perfect": "パーフェクト！",
+    "eval_great": "見事なドライビング！",
+    "eval_good": "ナイスクリア！",
+    "next_level": "次のレベル",
+    "replay": "もう一度",
+    "menu": "メニュー"
+  }
+}

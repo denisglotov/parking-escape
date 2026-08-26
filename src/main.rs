@@ -10,7 +10,9 @@ use game::Board;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 use ui::hud::{render_hud, HudAction};
-use ui::level_select::{render_level_select, LevelSelectAction, LevelSelectState};
+use ui::level_select::{
+    render_level_select, LevelSelectAction, LevelSelectParams, LevelSelectState,
+};
 use ui::menu::{render_main_menu, MenuAction};
 use ui::renderer::render_board;
 use ui::win_modal::{render_win_modal, WinModalAction};
@@ -37,8 +39,10 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    // 1. Initialize Audio and Load Assets
+    // 1. Initialize Audio, Locales and Load Assets
     let mut sound = SoundManager::new().await;
+    let detected_tag = game::i18n::detect_locale_tag();
+    let locales = game::i18n::resolve_locale(&detected_tag);
     let textures = TextureStore::load_all().await;
     let repo = LevelRepository::load_embedded().expect("Failed to load embedded level packs");
     let mut water_ripples = WaterRippleManager::new();
@@ -62,7 +66,7 @@ async fn main() {
 
         match scene {
             AppScene::MainMenu => {
-                match render_main_menu(sound.enabled, &textures, screen_w, screen_h) {
+                match render_main_menu(sound.enabled, locales, &textures, screen_w, screen_h) {
                     MenuAction::Play => {
                         sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         current_board = repo
@@ -85,15 +89,15 @@ async fn main() {
             }
 
             AppScene::LevelSelect => {
-                match render_level_select(
-                    &repo,
-                    &records,
-                    &mut current_pack,
-                    &mut level_select_state,
-                    &textures,
-                    screen_w,
-                    screen_h,
-                ) {
+                let mut params = LevelSelectParams {
+                    repo: &repo,
+                    records: &records,
+                    active_pack: &mut current_pack,
+                    state: &mut level_select_state,
+                    locales,
+                    textures: &textures,
+                };
+                match render_level_select(&mut params, screen_w, screen_h) {
                     LevelSelectAction::SelectLevel(pack, idx) => {
                         sound.play(SoundTrigger::ButtonClick, game::Theme::City);
                         current_pack = pack;
@@ -200,6 +204,7 @@ async fn main() {
                     current_board.move_count,
                     !current_board.history.is_empty() && scene == AppScene::Playing,
                     sound.enabled,
+                    locales,
                     &textures,
                     screen_w,
                 );
@@ -237,6 +242,7 @@ async fn main() {
                         current_level,
                         current_board.move_count,
                         has_next,
+                        locales,
                         &textures,
                         screen_w,
                         screen_h,
@@ -269,5 +275,33 @@ async fn main() {
         }
 
         next_frame().await;
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_plugin_exports {
+    #[no_mangle]
+    pub extern "C" fn parking_audio_crate_version() -> u32 {
+        1
+    }
+
+    #[no_mangle]
+    pub extern "C" fn macroquad_audio_crate_version() -> u32 {
+        1
+    }
+
+    #[no_mangle]
+    pub extern "C" fn sapp_jsutils_crate_version() -> u32 {
+        1
+    }
+
+    #[no_mangle]
+    pub extern "C" fn quad_net_crate_version() -> u32 {
+        1
+    }
+
+    #[no_mangle]
+    pub extern "C" fn parking_locale_crate_version() -> u32 {
+        1
     }
 }

@@ -18,23 +18,6 @@ impl FieldSize {
         FieldSize::Medium8x8,
         FieldSize::Big10x10,
     ];
-
-    pub fn label(&self) -> &'static str {
-        match self {
-            FieldSize::Small6x6 => "Small 6x6",
-            FieldSize::Medium8x8 => "Medium 8x8",
-            FieldSize::Big10x10 => "Big 10x10",
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn dimension(&self) -> i32 {
-        match self {
-            FieldSize::Small6x6 => 6,
-            FieldSize::Medium8x8 => 8,
-            FieldSize::Big10x10 => 10,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -50,14 +33,6 @@ impl DifficultyTier {
         DifficultyTier::Challenging,
         DifficultyTier::Hard,
     ];
-
-    pub fn label(&self) -> &'static str {
-        match self {
-            DifficultyTier::Relaxed => "Relaxed",
-            DifficultyTier::Challenging => "Challenging",
-            DifficultyTier::Hard => "Hard",
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

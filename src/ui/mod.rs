@@ -134,9 +134,10 @@ impl TextureStore {
         let font = load_ttf_font_from_bytes(include_bytes!("../../assets/fonts/game_font.ttf"))
             .expect("Failed to load TTF game font");
 
-        // Pre-cache ASCII character set at the base font size (and common DPI multipliers)
+        // Pre-cache character set across all supported locales at base and scaled sizes
         // so that the GPU texture atlas is allocated once upfront and never reallocated/deleted mid-frame.
-        let chars = Font::ascii_character_list();
+        let chars = crate::game::i18n::collect_all_characters();
+
         font.populate_font_cache(&chars, Self::BASE_FONT_SIZE);
         font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 1.5).ceil() as u16);
         font.populate_font_cache(&chars, (Self::BASE_FONT_SIZE as f32 * 2.0).ceil() as u16);

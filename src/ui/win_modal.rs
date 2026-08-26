@@ -1,4 +1,5 @@
 use super::{draw_ui_button, ButtonStyle, ShadowTextStyle, TextureStore, UiMetrics, THEME};
+use crate::game::i18n::LocaleStrings;
 use crate::game::level::LevelData;
 use macroquad::prelude::*;
 
@@ -14,6 +15,7 @@ pub fn render_win_modal(
     level: &LevelData,
     moves_taken: u32,
     has_next_level: bool,
+    locales: &LocaleStrings,
     textures: &TextureStore,
     screen_w: f32,
     screen_h: f32,
@@ -51,7 +53,7 @@ pub fn render_win_modal(
     let is_mouse_down = is_mouse_button_pressed(MouseButton::Left);
 
     // Title: LEVEL CLEARED! (Big Celebration)
-    let title = "LEVEL CLEARED!";
+    let title = &locales.win_modal.title;
     let title_font_size = metrics.s(38.0);
     textures.draw_text_with_shadow(
         title,
@@ -79,10 +81,9 @@ pub fn render_win_modal(
     );
 
     // Moves vs Par moves summary (Large & Clear)
-    let stats_text = format!(
-        "Completed in {} moves! (Par: {})",
-        moves_taken, level.par_moves
-    );
+    let stats_text = locales
+        .win_modal
+        .format_completed(moves_taken, level.par_moves);
     let stats_font = metrics.s(24.0);
     textures.draw_text_centered(
         &stats_text,
@@ -92,13 +93,9 @@ pub fn render_win_modal(
         THEME.text_secondary,
     );
 
-    let rating_eval = if moves_taken <= level.par_moves {
-        "Perfect Strategy!"
-    } else if moves_taken <= level.par_moves + 2 {
-        "Great Driving!"
-    } else {
-        "Good Job!"
-    };
+    let rating_eval = locales
+        .win_modal
+        .rating_evaluation(moves_taken, level.par_moves);
     let eval_font = metrics.s(22.0);
     textures.draw_text_centered(
         rating_eval,
@@ -120,7 +117,7 @@ pub fn render_win_modal(
         if draw_ui_button(
             textures,
             Rect::new(modal_x + metrics.s(24.0), btn_y, btn_w, btn_h),
-            "NEXT LEVEL",
+            &locales.win_modal.next_level,
             ButtonStyle {
                 bg_color: THEME.accent_green,
                 font_size: btn_font_size,
@@ -146,7 +143,7 @@ pub fn render_win_modal(
     if draw_ui_button(
         textures,
         Rect::new(modal_x + metrics.s(24.0), btn_y, half_w, btn_h),
-        "REPLAY",
+        &locales.win_modal.replay,
         secondary_style,
         mouse_pos,
         is_mouse_down,
@@ -162,7 +159,7 @@ pub fn render_win_modal(
             half_w,
             btn_h,
         ),
-        "MENU",
+        &locales.win_modal.menu,
         secondary_style,
         mouse_pos,
         is_mouse_down,

@@ -1,0 +1,39 @@
+{
+  "locale": "ko-KR",
+  "language_name": "한국어",
+  "menu": {
+    "title": "주차 탈출",
+    "subtitle": "다이내믹 슬라이딩 논리 퍼즐",
+    "play_game": "게임 시작",
+    "level_select": "레벨 선택",
+    "sound_on": "소리: 켜짐",
+    "sound_off": "소리: 꺼짐"
+  },
+  "level_select": {
+    "title": "레벨 선택",
+    "back": "뒤로",
+    "size_small": "소형 6x6",
+    "size_medium": "중형 8x8",
+    "size_big": "대형 10x10",
+    "diff_relaxed": "쉬움",
+    "diff_challenging": "보통",
+    "diff_hard": "어려움",
+    "generating_levels": "레벨 생성 중..."
+  },
+  "hud": {
+    "level_template": "레벨 {id}",
+    "moves": "이동",
+    "par": "기준",
+    "stats_template": "이동: {moves}  /  기준: {par}"
+  },
+  "win_modal": {
+    "title": "레벨 클리어!",
+    "completed_template": "{moves}번 만에 완료! (기준: {par})",
+    "eval_perfect": "완벽한 전략!",
+    "eval_great": "훌륭한 운전!",
+    "eval_good": "잘했습니다!",
+    "next_level": "다음 레벨",
+    "replay": "다시하기",
+    "menu": "메뉴"
+  }
+}
