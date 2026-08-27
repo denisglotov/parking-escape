@@ -244,7 +244,7 @@ impl Board {
         velocity: f32,
     ) -> Option<SoundTrigger> {
         let is_marine = self.theme == Theme::Marine;
-        let is_emergency = self.vehicles[vehicle_idx].kind.is_emergency();
+        let is_emergency = !is_marine && self.vehicles[vehicle_idx].kind.is_emergency();
         let enable_bounce = !is_marine;
 
         self.vehicles[vehicle_idx].bump_state = Some(crate::game::vehicle::BumpState::new(
@@ -911,6 +911,43 @@ mod tests {
         let city_coast_vel = city_board.active_coast.as_ref().unwrap().velocity;
         let marine_coast_vel = marine_board.active_coast.as_ref().unwrap().velocity;
         assert!(marine_coast_vel > city_coast_vel, "Marine coast velocity ({}) should be higher than city ({}) due to lower water friction", marine_coast_vel, city_coast_vel);
+    }
+
+    #[test]
+    fn test_marine_theme_no_bumping_sirens() {
+        let police_boat = Vehicle::new(
+            VehicleKind::CarPolice,
+            0,
+            0,
+            2,
+            Orientation::Horizontal,
+            false,
+        );
+        let ambulance_boat = Vehicle::new(
+            VehicleKind::Ambulance,
+            0,
+            1,
+            2,
+            Orientation::Horizontal,
+            false,
+        );
+        let exit = ExitPosition {
+            side: ExitSide::Right,
+            row: 0,
+            col: 0,
+        };
+        let mut board = Board::new(6, 6, exit, vec![police_boat, ambulance_boat], vec![]);
+        board.theme = Theme::Marine;
+
+        // Bumping police boat in marine theme must NOT trigger Siren or is_emergency BumpState
+        let trigger_police = board.trigger_bump(0, 1.0, 5.0);
+        assert_eq!(trigger_police, Some(SoundTrigger::Alarm));
+        assert!(!board.vehicles[0].bump_state.as_ref().unwrap().is_emergency);
+
+        // Bumping ambulance boat in marine theme must NOT trigger Siren or is_emergency BumpState
+        let trigger_amb = board.trigger_bump(1, 1.0, 5.0);
+        assert_eq!(trigger_amb, Some(SoundTrigger::Alarm));
+        assert!(!board.vehicles[1].bump_state.as_ref().unwrap().is_emergency);
     }
 
     #[test]

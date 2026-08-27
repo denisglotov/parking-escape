@@ -665,27 +665,15 @@ fn render_ground_effects(
     bounds: Rect,
     cs: f32,
 ) {
-    if veh.kind.is_emergency() && theme != Theme::Railroad {
+    if veh.kind.is_emergency() && theme == Theme::City {
         let phase = bump.emergency_strobe_phase();
         let micro_pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
         let center_x = bounds.x + bounds.w * 0.5;
         let center_y = bounds.y + bounds.h * 0.5;
-        let reflection_col = match theme {
-            Theme::Marine => {
-                if phase < 0.5 {
-                    Color::new(0.05, 0.75, 1.0, 0.20 * micro_pulse * bump.intensity)
-                } else {
-                    Color::new(1.0, 0.25, 0.15, 0.20 * micro_pulse * bump.intensity)
-                }
-            }
-            Theme::City => {
-                if phase < 0.5 {
-                    Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
-                } else {
-                    Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
-                }
-            }
-            Theme::Railroad => Color::new(0.0, 0.0, 0.0, 0.0),
+        let reflection_col = if phase < 0.5 {
+            Color::new(1.0, 0.1, 0.15, 0.18 * micro_pulse * bump.intensity)
+        } else {
+            Color::new(0.1, 0.4, 1.0, 0.18 * micro_pulse * bump.intensity)
         };
         draw_circle(center_x, center_y, cs * 1.5, reflection_col);
     }
@@ -782,8 +770,8 @@ fn render_vehicle_effects(
         }
     }
 
-    // 2. City / Marine emergency rooftop strobe beacons
-    if is_emergency && theme != Theme::Railroad {
+    // 2. City emergency rooftop strobe beacons
+    if is_emergency && theme == Theme::City {
         let phase = bump.emergency_strobe_phase();
         let pulse = ((phase * 12.0) % 1.0 * std::f32::consts::PI).sin().max(0.0);
 

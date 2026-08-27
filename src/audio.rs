@@ -73,7 +73,6 @@ mod native_backend {
         snd_marine_slide: Option<Sound>,
         snd_marine_bump: Option<Sound>,
         snd_marine_alarm: Option<Sound>,
-        snd_marine_siren: Option<Sound>,
         snd_marine_exit: Option<Sound>,
 
         snd_rail_slide: Option<Sound>,
@@ -120,11 +119,6 @@ mod native_backend {
                 .ok(),
                 snd_marine_alarm: load_sound_from_bytes(include_bytes!(
                     "../assets/audio/marine_alarm.wav"
-                ))
-                .await
-                .ok(),
-                snd_marine_siren: load_sound_from_bytes(include_bytes!(
-                    "../assets/audio/marine_siren.wav"
                 ))
                 .await
                 .ok(),
@@ -176,7 +170,7 @@ mod native_backend {
                 (SoundTrigger::Alarm, Theme::City) => &self.snd_alarm,
                 (SoundTrigger::Alarm, Theme::Railroad) => &self.snd_rail_alarm,
 
-                (SoundTrigger::Siren, Theme::Marine) => &self.snd_marine_siren,
+                (SoundTrigger::Siren, Theme::Marine) => &self.snd_marine_alarm,
                 (SoundTrigger::Siren, Theme::City) => &self.snd_siren,
                 (SoundTrigger::Siren, Theme::Railroad) => &self.snd_rail_siren,
 
